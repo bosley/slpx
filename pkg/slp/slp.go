@@ -15,6 +15,59 @@ func (e *ParseError) Error() string {
 	return fmt.Sprintf("%s at position %d", e.Message, e.Position)
 }
 
+func findActualUnclosedParen(source string, startPos int) int {
+	type parenInfo struct {
+		pos   int
+		depth int
+	}
+
+	var stack []parenInfo
+	depth := 0
+	inString := false
+	inComment := false
+
+	for i := startPos; i < len(source); i++ {
+		ch := source[i]
+
+		if inComment {
+			if ch == '\n' {
+				inComment = false
+			}
+			continue
+		}
+
+		if ch == ';' && !inString {
+			inComment = true
+			continue
+		}
+
+		if ch == '"' && (i == 0 || source[i-1] != '\\') {
+			inString = !inString
+			continue
+		}
+
+		if inString {
+			continue
+		}
+
+		if ch == '(' {
+			stack = append(stack, parenInfo{pos: i, depth: depth})
+			depth++
+		} else if ch == ')' {
+			if len(stack) > 0 {
+				stack = stack[:len(stack)-1]
+				depth--
+			}
+		}
+	}
+
+	if len(stack) > 0 {
+		return stack[len(stack)-1].pos
+	}
+
+	return startPos
+}
+
 type ATOM string
 
 const (
@@ -115,7 +168,8 @@ func (p *Parser) parseList() (object.Obj, error) {
 	for p.Position < len(p.Target) {
 		p.skipWhitespace()
 		if p.Position >= len(p.Target) {
-			return object.Obj{}, &ParseError{Position: listStart, Message: "unclosed list"}
+			actualPos := findActualUnclosedParen(p.Target, listStart)
+			return object.Obj{}, &ParseError{Position: actualPos, Message: "unclosed list"}
 		}
 		if p.Target[p.Position] == ')' {
 			p.Position++
@@ -129,7 +183,8 @@ func (p *Parser) parseList() (object.Obj, error) {
 		items = append(items, item)
 	}
 
-	return object.Obj{}, &ParseError{Position: listStart, Message: "unclosed list"}
+	actualPos := findActualUnclosedParen(p.Target, listStart)
+	return object.Obj{}, &ParseError{Position: actualPos, Message: "unclosed list"}
 }
 
 func (p *Parser) parseSome() (object.Obj, error) {

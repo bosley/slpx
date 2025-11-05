@@ -1,0 +1,6 @@
+(set result
+  (int/add 10
+    (int/mul 5 (int/sub 20 3
+
+(putln result)
+

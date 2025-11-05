@@ -1,0 +1,6 @@
+(putln "test")
+
+(set x (int/add 5 10
+
+(putln x)
+

@@ -39,9 +39,19 @@ This directory contains test files demonstrating the precise error location repo
 - Shows error at line 5, column 4
 
 ### `unclosed.slpx`
-**Error:** Parse error - unclosed list
+**Error:** Parse error - unclosed list (outer)
 - Tests that parse errors (not runtime errors) are properly formatted
 - Shows error at line 3, column 1 pointing to the opening parenthesis
+
+### `nested_unclosed.slpx`
+**Error:** Parse error - unclosed list (inner)
+- Tests detection of actual unclosed paren in nested lists
+- Points to column 8 `(int/add`, not column 1 `(set`
+
+### `deep_unclosed.slpx`
+**Error:** Parse error - unclosed list (deeply nested)
+- Tests detection with multiple levels of nesting
+- Points to column 16 `(int/sub`, the innermost unclosed paren
 
 ## Error Types
 
@@ -50,6 +60,10 @@ Caught during parsing (syntax errors):
 - Unclosed lists/strings
 - Invalid syntax
 - Macro errors
+
+**Smart Detection:** For unclosed lists, the error points to the *actual* unclosed paren, 
+not just where parsing started. Even with deeply nested lists, it identifies the innermost 
+unclosed paren by tracking opening/closing parens through the entire remaining source.
 
 ### Runtime Errors  
 Caught during evaluation (semantic errors):
