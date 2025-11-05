@@ -17,23 +17,31 @@
     "\n\n\tThis is back to normal text.\n\n"
 )
 
-
 (io/flush)
 
+(set prompt_int (fn (msg :S) :I
+    (try
+        (io/in/int msg)
+        (do
+            (putln "Invalid input. Please enter a valid integer.")
+            (prompt_int msg)))))
+
+(set prompt_real (fn (msg :S) :*
+    (try
+        (io/in/real msg)
+        (do
+            (putln "Invalid input. Please enter a valid real number.")
+            (prompt_real msg)))))
 
 (set name "")
 (set age 0)
 (set favorite_real 0.0)
-(set prompt "Enter your name: ")
 
 (do
     (io/color/reset)
-    (set name (io/in prompt))
-    (set prompt "Enter your age: ")
-    (set age (io/in/int prompt))       ;   special qualifier ON io/in (string from user) is io/in/int which returns an object of error type if not convertable to an int 
-    
-
-    (set favorite_real (io/in/real "Enter your favorite real number: ")) ; similar special qualifier ON io/in (string from user) is io/in/real which returns an object of error type if not convertable to a real
+    (set name (io/in "Enter your name: "))
+    (set age (prompt_int "Enter your age: "))
+    (set favorite_real (prompt_real "Enter your favorite real number: "))
 )
 
 (putln "Hello, " name "! You are " age " years old.")
@@ -43,4 +51,4 @@
 ;   io/out/set_precision  ; sets the precision for real numbers handling in io/out
 
 ;   io/in        ; string from user
-
+(io/flush)
