@@ -42,7 +42,7 @@ for TEST_DIR in "${TEST_DIRS[@]}"; do
 
     START_TIME=$(gdate +%s.%N 2>/dev/null || date +%s)
     
-    (cd "$TEST_DIR" && ../../build/slpx --run main.slpx)
+    (cd "$TEST_DIR" && ../../build/slpx main.slpx)
     EXIT_CODE=$?
     
     END_TIME=$(gdate +%s.%N 2>/dev/null || date +%s)

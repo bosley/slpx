@@ -31,12 +31,15 @@ type Session struct {
 type SessionBuilder struct {
 	logger *slog.Logger
 	env    sessionEnv
+
+	fgs []env.FunctionGroup
 }
 
 func NewSessionBuilder(logger *slog.Logger) *SessionBuilder {
 	return &SessionBuilder{
 		logger: logger.WithGroup("session"),
 		env:    sessionEnv{},
+		fgs:    []env.FunctionGroup{},
 	}
 }
 
@@ -55,6 +58,11 @@ func (b *SessionBuilder) WithMEM(mem env.MEM) *SessionBuilder {
 	return b
 }
 
+func (b *SessionBuilder) WithFunctionGroup(group env.FunctionGroup) *SessionBuilder {
+	b.fgs = append(b.fgs, group)
+	return b
+}
+
 // Path is the "session path" on-disk (in fs) - (likely the path of the main.splx
 // file as the user would expect to read/write relative to their launch point)
 func (b *SessionBuilder) Build(forPathOnFS string) *Session {
@@ -69,11 +77,10 @@ func (b *SessionBuilder) Build(forPathOnFS string) *Session {
 	}
 
 	cleanedPathOnFS := filepath.Clean(forPathOnFS)
-	dirOnFS := filepath.Dir(cleanedPathOnFS)
 
 	session := &Session{
 		logger:   b.logger,
-		pathOnFS: dirOnFS,
+		pathOnFS: cleanedPathOnFS,
 		env: sessionEnv{
 			io:  b.env.io,
 			fs:  b.env.fs,
@@ -93,7 +100,6 @@ func (b *SessionBuilder) Build(forPathOnFS string) *Session {
 		WithFunctionGroup(list.NewListFunctions()).
 		WithFunctionGroup(reflection.NewReflectionFunctions()).
 		WithFunctionGroup(fsFunctions).
-		WithFunctionGroup(newReplFunctions(b.logger, session)).
 		Build()
 
 	session.env.evalCtx.SetCurrentFilePath(
@@ -101,6 +107,10 @@ func (b *SessionBuilder) Build(forPathOnFS string) *Session {
 	)
 
 	fsFunctions.Setup(session.env.evalCtx.GetRuntime())
+
+	for _, fg := range b.fgs {
+		session.env.evalCtx.AddFunctionGroup(fg)
+	}
 
 	return session
 }

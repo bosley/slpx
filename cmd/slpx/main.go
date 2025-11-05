@@ -1,135 +1,112 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/bosley/slpx/pkg/cgs/fs"
-	"github.com/bosley/slpx/pkg/cgs/list"
-	"github.com/bosley/slpx/pkg/cgs/numbers"
-	"github.com/bosley/slpx/pkg/cgs/reflection"
-	"github.com/bosley/slpx/pkg/cgs/str"
-	"github.com/bosley/slpx/pkg/env"
 	"github.com/bosley/slpx/pkg/object"
+	"github.com/bosley/slpx/pkg/repl"
 	"github.com/bosley/slpx/pkg/slp"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: %s [--run] <file1> [file2] [...]\n", os.Args[0])
-		os.Exit(1)
-	}
-
-	runMode := false
-	files := os.Args[1:]
-
-	if len(files) > 0 && files[0] == "--run" {
-		runMode = true
-		files = files[1:]
-	}
-
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
 
-	for _, filePath := range files {
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error reading file %s: %v\n", filePath, err)
-			os.Exit(1)
-		}
-
-		parser := slp.NewParser(string(content))
-		items, err := parser.ParseAll()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error parsing file %s: %v\n", filePath, err)
-			os.Exit(1)
-		}
-
-		if runMode {
-			fmt.Printf("Running: %s\n", filePath)
-
-			fsFunctions := fs.NewFsFunctions(logger)
-
-			evalCtx := env.NewEvalBuilder(logger.WithGroup("eval")).
-				WithFunctionGroup(env.NewCoreFunctions()).
-				WithFunctionGroup(numbers.NewArithFunctions()).
-				WithFunctionGroup(str.NewStrFunctions()).
-				WithFunctionGroup(list.NewListFunctions()).
-				WithFunctionGroup(reflection.NewReflectionFunctions()).
-				WithFunctionGroup(fsFunctions).
-				Build()
-
-			absFilePath, err := filepath.Abs(filePath)
-			if err != nil {
-				absFilePath = filePath
-			}
-
-			evalCtx.SetCurrentFilePath(absFilePath)
-
-			// setup after file path set
-			fsFunctions.Setup(evalCtx.GetRuntime())
-
-			var result object.Obj = object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}}
-			for _, item := range items {
-				res, err := evalCtx.Evaluate(item)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Runtime error: %v\n", err)
-					os.Exit(1)
-				}
-				result = res
-			}
-
-			fmt.Printf("Result: %s\n", result.Encode())
-		} else {
-			fmt.Printf("File: %s\n", filePath)
-			for i, item := range items {
-				fmt.Printf("[%d] %s\n", i, item.Encode())
-				printObjDetails(item, "    ")
-				fmt.Println()
-			}
-		}
+	if len(os.Args) < 2 {
+		startInteractiveREPL(logger)
+		return
 	}
+
+	if len(os.Args) > 2 {
+		fmt.Fprintf(os.Stderr, "Usage: %s [file]\n", os.Args[0])
+		os.Exit(1)
+	}
+
+	filePath := os.Args[1]
+
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading file %s: %v\n", filePath, err)
+		os.Exit(1)
+	}
+
+	absFilePath, err := filepath.Abs(filePath)
+	if err != nil {
+		absFilePath = filePath
+	}
+
+	session := repl.NewSessionBuilder(logger).Build(absFilePath)
+
+	result, err := session.Evaluate(string(content))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Runtime error in %s: %v\n", filePath, err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Result: %s\n", result.Encode())
 }
 
-func printObjDetails(obj object.Obj, indent string) {
-	fmt.Printf("%sType: %s\n", indent, obj.Type)
-	switch obj.Type {
-	case object.OBJ_TYPE_LIST:
-		list := obj.D.(object.List)
-		fmt.Printf("%sElements: %d\n", indent, len(list))
-		for i, item := range list {
-			fmt.Printf("%s[%d]:\n", indent, i)
-			printObjDetails(item, indent+"    ")
-		}
-	case object.OBJ_TYPE_INTEGER:
-		fmt.Printf("%sValue: %d (integer)\n", indent, obj.D.(object.Integer))
-	case object.OBJ_TYPE_REAL:
-		fmt.Printf("%sValue: %g (real)\n", indent, obj.D.(object.Real))
-	case object.OBJ_TYPE_STRING:
-		fmt.Printf("%sValue: %q\n", indent, obj.D.(string))
-	case object.OBJ_TYPE_IDENTIFIER:
-		fmt.Printf("%sValue: %s\n", indent, obj.D.(object.Identifier))
-	case object.OBJ_TYPE_SOME:
-		fmt.Printf("%sQuoted:\n", indent)
-		printObjDetails(obj.D.(object.Some), indent+"    ")
-	case object.OBJ_TYPE_FUNCTION:
-		function := obj.D.(object.Function)
-		fmt.Printf("%sFunction:\n", indent)
-		fmt.Printf("%sParameters: %d\n", indent, len(function.Parameters))
-		for i, param := range function.Parameters {
-			fmt.Printf("%sParameter[%d]: %s\n", indent, i, param.Name)
-		}
-		fmt.Printf("%sBody: %d\n", indent, len(function.Body))
-		for i, item := range function.Body {
-			fmt.Printf("%sBody[%d]:\n", indent, i)
-			printObjDetails(item, indent+"    ")
-		}
-	case object.OBJ_TYPE_ERROR:
-		err := obj.D.(object.Error)
-		fmt.Printf("%sPosition: %d\n", indent, err.Position)
-		fmt.Printf("%sMessage: %s\n", indent, err.Message)
+func startInteractiveREPL(logger *slog.Logger) {
+	fmt.Println("SLPX Interactive REPL")
+	fmt.Println("Type expressions to evaluate. Press Ctrl+D (EOF) to exit.")
+	fmt.Println()
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = "."
 	}
+
+	sessionPath := filepath.Join(cwd, ".repl.slpx")
+	session := repl.NewSessionBuilder(logger).Build(sessionPath)
+
+	scanner := bufio.NewScanner(os.Stdin)
+	lineBuffer := strings.Builder{}
+
+	fmt.Print("> ")
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		lineBuffer.WriteString(line)
+		lineBuffer.WriteString("\n")
+
+		input := lineBuffer.String()
+
+		parser := slp.NewParser(input)
+		_, err := parser.ParseAll()
+
+		if err != nil {
+			if strings.Contains(err.Error(), "unexpected end of input") ||
+				strings.Contains(err.Error(), "expected") {
+				fmt.Print("... ")
+				continue
+			}
+
+			fmt.Fprintf(os.Stderr, "Parse error: %v\n", err)
+			lineBuffer.Reset()
+			fmt.Print("> ")
+			continue
+		}
+
+		result, err := session.Evaluate(input)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		} else if result.Type != object.OBJ_TYPE_NONE {
+			fmt.Printf("%s\n", result.Encode())
+		}
+
+		lineBuffer.Reset()
+		fmt.Print("> ")
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "Input error: %v\n", err)
+	}
+
+	fmt.Println()
 }
