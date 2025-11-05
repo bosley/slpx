@@ -1,0 +1,46 @@
+; basic color support
+(io/out
+
+
+    (io/color/fg "#000000") ; black text
+    (io/color/bg "#FFFF00") ; yellow background
+    "This is black text on a yellow background."
+    (io/color/reset)
+
+    "\n\n"
+
+    (io/color/fg "#FFFFFF") ; returns encoding for io/out 
+    (io/color/bg "#000000") ; returns encoding for io/out 
+    
+    "This is white text on a black background."
+    (io/color/reset)
+    "\n\n\tThis is back to normal text.\n\n"
+)
+
+
+(io/flush)
+
+
+(set name "")
+(set age 0)
+(set favorite_real 0.0)
+(set prompt "Enter your name: ")
+
+(do
+    (io/color/reset)
+    (set name (io/in prompt))
+    (set prompt "Enter your age: ")
+    (set age (io/in/int prompt))       ;   special qualifier ON io/in (string from user) is io/in/int which returns an object of error type if not convertable to an int 
+    
+
+    (set favorite_real (io/in/real "Enter your favorite real number: ")) ; similar special qualifier ON io/in (string from user) is io/in/real which returns an object of error type if not convertable to a real
+)
+
+(putln "Hello, " name "! You are " age " years old.")
+
+
+;   io/out                ; converts everything to a string, and then writes it to the console correctly as described above
+;   io/out/set_precision  ; sets the precision for real numbers handling in io/out
+
+;   io/in        ; string from user
+

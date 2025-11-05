@@ -64,6 +64,7 @@ type IO interface {
 	WriteString(s string) (int, error)
 	WriteError(data []byte) (int, error)
 	WriteErrorString(s string) (int, error)
+	Flush() error
 	SetStdin(r io.Reader)
 	SetStdout(w io.Writer)
 	SetStderr(w io.Writer)

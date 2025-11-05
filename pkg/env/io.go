@@ -10,15 +10,18 @@ type ioImpl struct {
 	stdin  io.Reader
 	stdout io.Writer
 	stderr io.Writer
+	writer *bufio.Writer
 }
 
 var _ IO = &ioImpl{}
 
 func DefaultIO() IO {
+	writer := bufio.NewWriter(os.Stdout)
 	return &ioImpl{
 		stdin:  os.Stdin,
 		stdout: os.Stdout,
 		stderr: os.Stderr,
+		writer: writer,
 	}
 }
 
@@ -38,11 +41,15 @@ func (i *ioImpl) ReadAll() ([]byte, error) {
 }
 
 func (i *ioImpl) Write(data []byte) (int, error) {
-	return i.stdout.Write(data)
+	return i.writer.Write(data)
 }
 
 func (i *ioImpl) WriteString(s string) (int, error) {
-	return i.stdout.Write([]byte(s))
+	return i.writer.WriteString(s)
+}
+
+func (i *ioImpl) Flush() error {
+	return i.writer.Flush()
 }
 
 func (i *ioImpl) WriteError(data []byte) (int, error) {
@@ -59,6 +66,7 @@ func (i *ioImpl) SetStdin(r io.Reader) {
 
 func (i *ioImpl) SetStdout(w io.Writer) {
 	i.stdout = w
+	i.writer = bufio.NewWriter(w)
 }
 
 func (i *ioImpl) SetStderr(w io.Writer) {

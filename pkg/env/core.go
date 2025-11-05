@@ -121,33 +121,6 @@ func (c *coreFunctions) Functions() map[object.Identifier]EnvFunction {
 	}
 }
 
-func parseTypeIdentifier(typeIdent object.Identifier) (object.ObjType, error) {
-	switch typeIdent {
-	case ":_":
-		return object.OBJ_TYPE_NONE, nil
-	case ":Q":
-		return object.OBJ_TYPE_SOME, nil
-	case ":*":
-		return object.OBJ_TYPE_ANY, nil
-	case ":L":
-		return object.OBJ_TYPE_LIST, nil
-	case ":E":
-		return object.OBJ_TYPE_ERROR, nil
-	case ":S":
-		return object.OBJ_TYPE_STRING, nil
-	case ":I":
-		return object.OBJ_TYPE_INTEGER, nil
-	case ":R":
-		return object.OBJ_TYPE_REAL, nil
-	case ":X":
-		return object.OBJ_TYPE_IDENTIFIER, nil
-	case ":F":
-		return object.OBJ_TYPE_FUNCTION, nil
-	default:
-		return "", fmt.Errorf("invalid type identifier: %s", typeIdent)
-	}
-}
-
 func cmdSet(ctx EvaluationContext, args object.List) (object.Obj, error) {
 	if len(args) != 2 {
 		return object.Obj{}, fmt.Errorf("set: requires 2 arguments, got %d", len(args))
@@ -234,7 +207,7 @@ func cmdFn(ctx EvaluationContext, args object.List) (object.Obj, error) {
 			name := nameObj.D.(object.Identifier)
 			typeIdent := typeObj.D.(object.Identifier)
 
-			objType, err := parseTypeIdentifier(typeIdent)
+			objType, err := object.GetTypeFromIdentifier(typeIdent)
 			if err != nil {
 				return object.Obj{}, err
 			}
@@ -251,7 +224,7 @@ func cmdFn(ctx EvaluationContext, args object.List) (object.Obj, error) {
 
 	if len(args) > 1 && args[1].Type == object.OBJ_TYPE_IDENTIFIER {
 		returnTypeIdent := args[1].D.(object.Identifier)
-		parsedReturnType, err := parseTypeIdentifier(returnTypeIdent)
+		parsedReturnType, err := object.GetTypeFromIdentifier(returnTypeIdent)
 		if err == nil {
 			returnType = parsedReturnType
 			bodyStartIdx = 2

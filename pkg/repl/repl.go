@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/bosley/slpx/pkg/cgs/fs"
+	"github.com/bosley/slpx/pkg/cgs/io"
 	"github.com/bosley/slpx/pkg/cgs/list"
 	"github.com/bosley/slpx/pkg/cgs/numbers"
 	"github.com/bosley/slpx/pkg/cgs/reflection"
@@ -89,6 +90,7 @@ func (b *SessionBuilder) Build(forPathOnFS string) *Session {
 	}
 
 	fsFunctions := fs.NewFsFunctions(b.logger.WithGroup("fs"))
+	ioFunctions := io.NewIoFunctions()
 
 	session.env.evalCtx = env.NewEvalBuilder(b.logger.WithGroup("eval")).
 		WithIO(b.env.io).
@@ -100,6 +102,7 @@ func (b *SessionBuilder) Build(forPathOnFS string) *Session {
 		WithFunctionGroup(list.NewListFunctions()).
 		WithFunctionGroup(reflection.NewReflectionFunctions()).
 		WithFunctionGroup(fsFunctions).
+		WithFunctionGroup(ioFunctions).
 		Build()
 
 	session.env.evalCtx.SetCurrentFilePath(
@@ -107,6 +110,7 @@ func (b *SessionBuilder) Build(forPathOnFS string) *Session {
 	)
 
 	fsFunctions.Setup(session.env.evalCtx.GetRuntime())
+	ioFunctions.Setup(session.env.evalCtx.GetRuntime())
 
 	for _, fg := range b.fgs {
 		session.env.evalCtx.AddFunctionGroup(fg)
