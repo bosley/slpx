@@ -52,6 +52,7 @@ type EvaluationContext interface {
 	Execute(list object.List) (object.Obj, error)
 
 	SetCurrentFilePath(path string)
+	GetCurrentFilePath() string
 
 	GetRuntime() Runtime
 }
@@ -213,6 +214,26 @@ func (e *evalCtx) SetCurrentFilePath(path string) {
 	e.currentFilePath = path
 }
 
+func (e *evalCtx) GetCurrentFilePath() string {
+	return e.currentFilePath
+}
+
+func (e *evalCtx) makeError(pos uint16, message string) object.Obj {
+	return object.Obj{
+		Type: object.OBJ_TYPE_ERROR,
+		D: object.Error{
+			File:     e.currentFilePath,
+			Position: int(pos),
+			Message:  message,
+		},
+		Pos: pos,
+	}
+}
+
+func (e *evalCtx) makeErrorFromObj(obj object.Obj, message string) object.Obj {
+	return e.makeError(obj.Pos, message)
+}
+
 func (e *evalCtx) Evaluate(obj object.Obj) (object.Obj, error) {
 	switch obj.Type {
 	case object.OBJ_TYPE_NONE, object.OBJ_TYPE_STRING,
@@ -226,20 +247,14 @@ func (e *evalCtx) Evaluate(obj object.Obj) (object.Obj, error) {
 
 	case object.OBJ_TYPE_IDENTIFIER:
 		ident := obj.D.(object.Identifier)
-		return e.lookupIdentifier(ident)
+		return e.lookupIdentifier(obj, ident)
 
 	case object.OBJ_TYPE_LIST:
 		list := obj.D.(object.List)
 		return e.Execute(list)
 
 	default:
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  "unknown object type: " + string(obj.Type),
-			},
-		}, nil
+		return e.makeErrorFromObj(obj, "unknown object type: "+string(obj.Type)), nil
 	}
 }
 
@@ -264,28 +279,16 @@ func (e *evalCtx) Execute(list object.List) (object.Obj, error) {
 		ident := firstEval.D.(object.Identifier)
 		envFunction, found := e.lookupEnvFunction(ident)
 		if !found {
-			return object.Obj{
-				Type: object.OBJ_TYPE_ERROR,
-				D: object.Error{
-					Position: 0,
-					Message:  "function not found: " + string(ident),
-				},
-			}, nil
+			return e.makeErrorFromObj(list[0], "function not found: "+string(ident)), nil
 		}
 		return e.executeEnvFunction(envFunction, list[1:])
 
 	default:
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  "first element is not callable: " + string(firstEval.Type),
-			},
-		}, nil
+		return e.makeErrorFromObj(list[0], "first element is not callable: "+string(firstEval.Type)), nil
 	}
 }
 
-func (e *evalCtx) lookupIdentifier(ident object.Identifier) (object.Obj, error) {
+func (e *evalCtx) lookupIdentifier(identObj object.Obj, ident object.Identifier) (object.Obj, error) {
 	obj, err := e.mem.Get(ident, true)
 	if err == nil {
 		return obj, nil
@@ -293,16 +296,10 @@ func (e *evalCtx) lookupIdentifier(ident object.Identifier) (object.Obj, error) 
 
 	_, found := e.lookupEnvFunction(ident)
 	if found {
-		return object.Obj{Type: object.OBJ_TYPE_IDENTIFIER, D: ident}, nil
+		return object.Obj{Type: object.OBJ_TYPE_IDENTIFIER, D: ident, Pos: identObj.Pos}, nil
 	}
 
-	return object.Obj{
-		Type: object.OBJ_TYPE_ERROR,
-		D: object.Error{
-			Position: 0,
-			Message:  "undefined identifier: " + string(ident),
-		},
-	}, nil
+	return e.makeErrorFromObj(identObj, "undefined identifier: "+string(ident)), nil
 }
 
 func (e *evalCtx) lookupEnvFunction(ident object.Identifier) (EnvFunction, bool) {
@@ -335,7 +332,11 @@ func (e *evalCtx) executeObjectFunction(functionObj object.Obj, args object.List
 
 func (e *evalCtx) executeVariadicFunction(function object.Function, args object.List, childMem MEM) (object.Obj, error) {
 	evaledArgs := make(object.List, len(args))
+	firstArgPos := uint16(0)
 	for i, arg := range args {
+		if i == 0 && len(args) > 0 {
+			firstArgPos = args[0].Pos
+		}
 		evaledArg, err := e.Evaluate(arg)
 		if err != nil {
 			return object.Obj{}, err
@@ -349,6 +350,7 @@ func (e *evalCtx) executeVariadicFunction(function object.Function, args object.
 	argsObj := object.Obj{
 		Type: object.OBJ_TYPE_LIST,
 		D:    evaledArgs,
+		Pos:  firstArgPos,
 	}
 	childMem.Set("$args", argsObj, false)
 
@@ -374,13 +376,11 @@ func (e *evalCtx) executeVariadicFunction(function object.Function, args object.
 	}
 
 	if function.ReturnType != object.OBJ_TYPE_ANY && function.ReturnType != result.Type {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  fmt.Sprintf("return type mismatch: expected %s, got %s", function.ReturnType, result.Type),
-			},
-		}, nil
+		resultPos := result.Pos
+		if resultPos == 0 && len(function.Body) > 0 {
+			resultPos = function.Body[len(function.Body)-1].Pos
+		}
+		return e.makeError(resultPos, fmt.Sprintf("return type mismatch: expected %s, got %s", function.ReturnType, result.Type)), nil
 	}
 
 	return result, nil
@@ -388,13 +388,11 @@ func (e *evalCtx) executeVariadicFunction(function object.Function, args object.
 
 func (e *evalCtx) executeNormalFunction(function object.Function, args object.List, childMem MEM) (object.Obj, error) {
 	if len(args) != len(function.Parameters) {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  "wrong number of arguments",
-			},
-		}, nil
+		argPos := uint16(0)
+		if len(args) > 0 {
+			argPos = args[0].Pos
+		}
+		return e.makeError(argPos, "wrong number of arguments"), nil
 	}
 
 	evaledArgs := make(object.List, len(args))
@@ -413,13 +411,7 @@ func (e *evalCtx) executeNormalFunction(function object.Function, args object.Li
 		param := function.Parameters[i]
 
 		if param.Type != object.OBJ_TYPE_ANY && param.Type != arg.Type {
-			return object.Obj{
-				Type: object.OBJ_TYPE_ERROR,
-				D: object.Error{
-					Position: 0,
-					Message:  fmt.Sprintf("type mismatch for parameter '%s': expected %s, got %s", param.Name, param.Type, arg.Type),
-				},
-			}, nil
+			return e.makeErrorFromObj(arg, fmt.Sprintf("type mismatch for parameter '%s': expected %s, got %s", param.Name, param.Type, arg.Type)), nil
 		}
 
 		childMem.Set(param.Name, arg, false)
@@ -447,13 +439,11 @@ func (e *evalCtx) executeNormalFunction(function object.Function, args object.Li
 	}
 
 	if function.ReturnType != object.OBJ_TYPE_ANY && function.ReturnType != result.Type {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  fmt.Sprintf("return type mismatch: expected %s, got %s", function.ReturnType, result.Type),
-			},
-		}, nil
+		resultPos := result.Pos
+		if resultPos == 0 && len(function.Body) > 0 {
+			resultPos = function.Body[len(function.Body)-1].Pos
+		}
+		return e.makeError(resultPos, fmt.Sprintf("return type mismatch: expected %s, got %s", function.ReturnType, result.Type)), nil
 	}
 
 	return result, nil
@@ -476,11 +466,11 @@ func (e *evalCtx) executeEnvFunction(function EnvFunction, args object.List) (ob
 	}
 
 	if len(function.Parameters) > 0 {
-		if errObj := validateEnvArgCount(function, evaledArgs); errObj.Type == object.OBJ_TYPE_ERROR {
+		if errObj := e.validateEnvArgCount(function, evaledArgs); errObj.Type == object.OBJ_TYPE_ERROR {
 			return errObj, nil
 		}
 
-		if errObj := validateEnvArgTypes(function, evaledArgs); errObj.Type == object.OBJ_TYPE_ERROR {
+		if errObj := e.validateEnvArgTypes(function, evaledArgs); errObj.Type == object.OBJ_TYPE_ERROR {
 			return errObj, nil
 		}
 	}
@@ -491,7 +481,7 @@ func (e *evalCtx) executeEnvFunction(function EnvFunction, args object.List) (ob
 	}
 
 	if function.ReturnType != "" && function.ReturnType != object.OBJ_TYPE_ANY {
-		if errObj := validateEnvReturnType(function, result); errObj.Type == object.OBJ_TYPE_ERROR {
+		if errObj := e.validateEnvReturnType(function, result); errObj.Type == object.OBJ_TYPE_ERROR {
 			return errObj, nil
 		}
 	}
@@ -499,35 +489,32 @@ func (e *evalCtx) executeEnvFunction(function EnvFunction, args object.List) (ob
 	return result, nil
 }
 
-func validateEnvArgCount(fn EnvFunction, args object.List) object.Obj {
+func (e *evalCtx) validateEnvArgCount(fn EnvFunction, args object.List) object.Obj {
 	minArgs := len(fn.Parameters)
+	argPos := uint16(0)
+	if len(args) > 0 {
+		argPos = args[0].Pos
+	}
 
 	if fn.Variadic {
 		if len(args) < minArgs {
-			return object.Obj{
-				Type: object.OBJ_TYPE_ERROR,
-				D: object.Error{
-					Position: 0,
-					Message:  fmt.Sprintf("insufficient arguments: expected at least %d, got %d", minArgs, len(args)),
-				},
-			}
+			return e.makeError(argPos, fmt.Sprintf("insufficient arguments: expected at least %d, got %d", minArgs, len(args)))
 		}
 	} else {
 		if len(args) != minArgs {
-			return object.Obj{
-				Type: object.OBJ_TYPE_ERROR,
-				D: object.Error{
-					Position: 0,
-					Message:  fmt.Sprintf("wrong number of arguments: expected %d, got %d", minArgs, len(args)),
-				},
-			}
+			return e.makeError(argPos, fmt.Sprintf("wrong number of arguments: expected %d, got %d", minArgs, len(args)))
 		}
 	}
 
-	return object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}}
+	return object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}, Pos: argPos}
 }
 
-func validateEnvArgTypes(fn EnvFunction, args object.List) object.Obj {
+func (e *evalCtx) validateEnvArgTypes(fn EnvFunction, args object.List) object.Obj {
+	argPos := uint16(0)
+	if len(args) > 0 {
+		argPos = args[0].Pos
+	}
+
 	for i, param := range fn.Parameters {
 		if i >= len(args) {
 			break
@@ -536,13 +523,7 @@ func validateEnvArgTypes(fn EnvFunction, args object.List) object.Obj {
 		arg := args[i]
 
 		if param.Type != object.OBJ_TYPE_ANY && param.Type != arg.Type {
-			return object.Obj{
-				Type: object.OBJ_TYPE_ERROR,
-				D: object.Error{
-					Position: 0,
-					Message:  fmt.Sprintf("type mismatch for parameter '%s': expected %s, got %s", param.Name, param.Type, arg.Type),
-				},
-			}
+			return e.makeErrorFromObj(arg, fmt.Sprintf("type mismatch for parameter '%s': expected %s, got %s", param.Name, param.Type, arg.Type))
 		}
 	}
 
@@ -551,36 +532,24 @@ func validateEnvArgTypes(fn EnvFunction, args object.List) object.Obj {
 		for i := len(fn.Parameters); i < len(args); i++ {
 			arg := args[i]
 			if lastParam.Type != object.OBJ_TYPE_ANY && lastParam.Type != arg.Type {
-				return object.Obj{
-					Type: object.OBJ_TYPE_ERROR,
-					D: object.Error{
-						Position: 0,
-						Message:  fmt.Sprintf("type mismatch for variadic parameter '%s' at position %d: expected %s, got %s", lastParam.Name, i, lastParam.Type, arg.Type),
-					},
-				}
+				return e.makeErrorFromObj(arg, fmt.Sprintf("type mismatch for variadic parameter '%s' at position %d: expected %s, got %s", lastParam.Name, i, lastParam.Type, arg.Type))
 			}
 		}
 	}
 
-	return object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}}
+	return object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}, Pos: argPos}
 }
 
-func validateEnvReturnType(fn EnvFunction, result object.Obj) object.Obj {
+func (e *evalCtx) validateEnvReturnType(fn EnvFunction, result object.Obj) object.Obj {
 	if result.Type == object.OBJ_TYPE_ERROR {
 		return result
 	}
 
 	if fn.ReturnType != result.Type {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  fmt.Sprintf("return type mismatch: expected %s, got %s", fn.ReturnType, result.Type),
-			},
-		}
+		return e.makeErrorFromObj(result, fmt.Sprintf("return type mismatch: expected %s, got %s", fn.ReturnType, result.Type))
 	}
 
-	return object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}}
+	return object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}, Pos: result.Pos}
 }
 
 func (e *evalCtx) GetMEM() MEM {

@@ -1,0 +1,6 @@
+; This file demonstrates precise error location reporting
+
+; Test 1: Wrong argument count - should fail on line 4
+(set x (fn (a :I b :I) :I (int/add a b)))
+(x 5 10 15)
+

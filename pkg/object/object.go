@@ -23,6 +23,7 @@ type List []Obj
 type Some = Obj
 type None struct{}
 type Error struct {
+	File     string
 	Position int
 	Message  string
 }
@@ -46,10 +47,8 @@ type Function struct {
 type Obj struct {
 	Type ObjType
 	D    any
+	Pos  uint16
 
-	// optional data storage for complex types built on-top of
-	// the Obj. It is recommended that complex types be stored in a
-	// "some" ObjType
 	C any
 }
 
@@ -85,6 +84,9 @@ func (o Obj) Encode() string {
 		return string(o.D.(Identifier))
 	case OBJ_TYPE_ERROR:
 		err := o.D.(Error)
+		if err.File != "" {
+			return fmt.Sprintf("ERROR:%s:%d:%s", err.File, err.Position, err.Message)
+		}
 		return fmt.Sprintf("ERROR:%d:%s", err.Position, err.Message)
 	case OBJ_TYPE_FUNCTION:
 		function := o.D.(Function)
@@ -102,23 +104,23 @@ func (o Obj) DeepCopy() Obj {
 		for i, item := range originalList {
 			newList[i] = item.DeepCopy()
 		}
-		return Obj{Type: OBJ_TYPE_LIST, D: newList}
+		return Obj{Type: OBJ_TYPE_LIST, D: newList, Pos: o.Pos}
 	case OBJ_TYPE_SOME:
 		originalSome := o.D.(Some)
-		return Obj{Type: OBJ_TYPE_SOME, D: originalSome.DeepCopy()}
+		return Obj{Type: OBJ_TYPE_SOME, D: originalSome.DeepCopy(), Pos: o.Pos}
 	case OBJ_TYPE_NONE:
-		return Obj{Type: OBJ_TYPE_NONE, D: None{}}
+		return Obj{Type: OBJ_TYPE_NONE, D: None{}, Pos: o.Pos}
 	case OBJ_TYPE_ERROR:
 		originalErr := o.D.(Error)
-		return Obj{Type: OBJ_TYPE_ERROR, D: Error{Position: originalErr.Position, Message: originalErr.Message}}
+		return Obj{Type: OBJ_TYPE_ERROR, D: Error{File: originalErr.File, Position: originalErr.Position, Message: originalErr.Message}, Pos: o.Pos}
 	case OBJ_TYPE_STRING:
-		return Obj{Type: OBJ_TYPE_STRING, D: o.D.(string)}
+		return Obj{Type: OBJ_TYPE_STRING, D: o.D.(string), Pos: o.Pos}
 	case OBJ_TYPE_INTEGER:
-		return Obj{Type: OBJ_TYPE_INTEGER, D: o.D.(Integer)}
+		return Obj{Type: OBJ_TYPE_INTEGER, D: o.D.(Integer), Pos: o.Pos}
 	case OBJ_TYPE_REAL:
-		return Obj{Type: OBJ_TYPE_REAL, D: o.D.(Real)}
+		return Obj{Type: OBJ_TYPE_REAL, D: o.D.(Real), Pos: o.Pos}
 	case OBJ_TYPE_IDENTIFIER:
-		return Obj{Type: OBJ_TYPE_IDENTIFIER, D: o.D.(Identifier)}
+		return Obj{Type: OBJ_TYPE_IDENTIFIER, D: o.D.(Identifier), Pos: o.Pos}
 	case OBJ_TYPE_FUNCTION:
 		originalFunction := o.D.(Function)
 		newBody := make(List, len(originalFunction.Body))
@@ -135,9 +137,11 @@ func (o Obj) DeepCopy() Obj {
 			Variadic:   originalFunction.Variadic,
 			Body:       newBody,
 			Self:       originalFunction.Self,
-		}, C: o.C}
+		}, C: o.C, Pos: o.Pos}
 	default:
-		return o
+		copy := o
+		copy.Pos = o.Pos
+		return copy
 	}
 }
 

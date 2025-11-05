@@ -39,19 +39,20 @@ func (p *Parser) Parse() (object.Obj, error) {
 	p.skipWhitespace()
 
 	if p.Position >= len(p.Target) {
-		return object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}}, nil
+		return object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}, Pos: uint16(p.Position)}, nil
 	}
 
 	switch p.Target[p.Position] {
 	case '(':
 		return p.parseList()
 	case '\'':
+		quotePos := p.Position
 		p.Position++
 		quoted, err := p.Parse()
 		if err != nil {
 			return object.Obj{}, err
 		}
-		return object.Obj{Type: object.OBJ_TYPE_SOME, D: object.Some(quoted)}, nil
+		return object.Obj{Type: object.OBJ_TYPE_SOME, D: object.Some(quoted), Pos: uint16(quotePos)}, nil
 	case '@':
 		return p.parseErrorLiteral()
 	case '$':
@@ -60,8 +61,9 @@ func (p *Parser) Parse() (object.Obj, error) {
 		}
 		return p.parseSome()
 	case '_':
+		nonePos := p.Position
 		p.Position++
-		return object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}}, nil
+		return object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}, Pos: uint16(nonePos)}, nil
 	case ';':
 		for p.Position < len(p.Target) && p.Target[p.Position] != '\n' {
 			p.Position++
@@ -108,7 +110,7 @@ func (p *Parser) parseList() (object.Obj, error) {
 		}
 		if p.Target[p.Position] == ')' {
 			p.Position++
-			listObj := object.Obj{Type: object.OBJ_TYPE_LIST, D: items}
+			listObj := object.Obj{Type: object.OBJ_TYPE_LIST, D: items, Pos: uint16(listStart)}
 			return p.expandMacroIfNeeded(listObj)
 		}
 		item, err := p.Parse()
@@ -140,14 +142,15 @@ func (p *Parser) parseSome() (object.Obj, error) {
 		return object.Obj{}, fmt.Errorf("empty identifier at position %d", start)
 	}
 
-	if numObj, ok := parseNumber(value); ok {
+	if numObj, ok := parseNumber(value, uint16(start)); ok {
 		return numObj, nil
 	}
 
-	return object.Obj{Type: object.OBJ_TYPE_IDENTIFIER, D: object.Identifier(value)}, nil
+	return object.Obj{Type: object.OBJ_TYPE_IDENTIFIER, D: object.Identifier(value), Pos: uint16(start)}, nil
 }
 
 func (p *Parser) parseQuotedString() (object.Obj, error) {
+	stringStart := p.Position
 	p.Position++
 	start := p.Position
 
@@ -161,7 +164,7 @@ func (p *Parser) parseQuotedString() (object.Obj, error) {
 				value := p.Target[start:p.Position]
 				p.Position++
 				unescaped := unescapeString(value)
-				return object.Obj{Type: object.OBJ_TYPE_STRING, D: unescaped}, nil
+				return object.Obj{Type: object.OBJ_TYPE_STRING, D: unescaped, Pos: uint16(stringStart)}, nil
 			}
 		}
 		p.Position++
@@ -196,7 +199,7 @@ func unescapeString(s string) string {
 	return result
 }
 
-func parseNumber(s string) (object.Obj, bool) {
+func parseNumber(s string, pos uint16) (object.Obj, bool) {
 	if s == "" {
 		return object.Obj{}, false
 	}
@@ -214,14 +217,14 @@ func parseNumber(s string) (object.Obj, bool) {
 		if err != nil {
 			return object.Obj{}, false
 		}
-		return object.Obj{Type: object.OBJ_TYPE_REAL, D: object.Real(num)}, true
+		return object.Obj{Type: object.OBJ_TYPE_REAL, D: object.Real(num), Pos: pos}, true
 	}
 
 	num, err := parseInt(s)
 	if err != nil {
 		return object.Obj{}, false
 	}
-	return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: object.Integer(num)}, true
+	return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: object.Integer(num), Pos: pos}, true
 }
 
 func parseInt(s string) (int64, error) {
@@ -339,6 +342,7 @@ func (p *Parser) parseErrorLiteral() (object.Obj, error) {
 			Position: errorPos,
 			Message:  message,
 		},
+		Pos: uint16(errorPos),
 	}, nil
 }
 
@@ -398,7 +402,7 @@ func (p *Parser) parseMacroDefinition() (object.Obj, error) {
 		Template:   template,
 	}
 
-	return object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}}, nil
+	return object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}, Pos: uint16(macroPos)}, nil
 }
 
 func (p *Parser) expandMacroIfNeeded(listObj object.Obj) (object.Obj, error) {
@@ -459,12 +463,12 @@ func (p *Parser) substituteInTemplate(template object.Obj, bindings map[string]o
 		for i, item := range list {
 			newList[i] = p.substituteInTemplate(item, bindings)
 		}
-		return object.Obj{Type: object.OBJ_TYPE_LIST, D: newList}
+		return object.Obj{Type: object.OBJ_TYPE_LIST, D: newList, Pos: template.Pos}
 
 	case object.OBJ_TYPE_SOME:
 		inner := template.D.(object.Some)
 		substituted := p.substituteInTemplate(inner, bindings)
-		return object.Obj{Type: object.OBJ_TYPE_SOME, D: object.Some(substituted)}
+		return object.Obj{Type: object.OBJ_TYPE_SOME, D: object.Some(substituted), Pos: template.Pos}
 
 	default:
 		return template

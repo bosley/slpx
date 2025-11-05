@@ -128,6 +128,9 @@ func (x *Session) Evaluate(source string) (object.Obj, error) {
 		if err != nil {
 			return object.Obj{}, err
 		}
+		if res.Type == object.OBJ_TYPE_ERROR {
+			return res, nil
+		}
 		result = res
 	}
 

@@ -279,14 +279,13 @@ func cmdFn(ctx EvaluationContext, args object.List) (object.Obj, error) {
 }
 
 func cmdTry(ctx EvaluationContext, args object.List) (object.Obj, error) {
+	evalCtx := ctx.(*evalCtx)
 	if len(args) != 2 {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  fmt.Sprintf("try: requires 2 arguments, got %d", len(args)),
-			},
-		}, nil
+		argPos := uint16(0)
+		if len(args) > 0 {
+			argPos = args[0].Pos
+		}
+		return evalCtx.makeError(argPos, fmt.Sprintf("try: requires 2 arguments, got %d", len(args))), nil
 	}
 
 	result, err := ctx.Evaluate(args[0])
@@ -295,7 +294,6 @@ func cmdTry(ctx EvaluationContext, args object.List) (object.Obj, error) {
 	}
 
 	if result.Type == object.OBJ_TYPE_ERROR {
-		evalCtx := ctx.(*evalCtx)
 
 		errorObj := result.D.(object.Error)
 		errorString := object.Obj{
@@ -336,26 +334,17 @@ func cmdDo(ctx EvaluationContext, args object.List) (object.Obj, error) {
 }
 
 func cmdDrop(ctx EvaluationContext, args object.List) (object.Obj, error) {
+	evalCtx := ctx.(*evalCtx)
 	if len(args) != 1 {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  fmt.Sprintf("drop: requires 1 argument, got %d", len(args)),
-			},
-		}, nil
+		argPos := uint16(0)
+		if len(args) > 0 {
+			argPos = args[0].Pos
+		}
+		return evalCtx.makeError(argPos, fmt.Sprintf("drop: requires 1 argument, got %d", len(args))), nil
 	}
 
-	evalCtx := ctx.(*evalCtx)
-
 	if args[0].Type != object.OBJ_TYPE_IDENTIFIER {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  fmt.Sprintf("drop: argument must be identifier, got %s", args[0].Type),
-			},
-		}, nil
+		return evalCtx.makeErrorFromObj(args[0], fmt.Sprintf("drop: argument must be identifier, got %s", args[0].Type)), nil
 	}
 
 	name := args[0].D.(object.Identifier)
@@ -364,14 +353,13 @@ func cmdDrop(ctx EvaluationContext, args object.List) (object.Obj, error) {
 }
 
 func cmdQu(ctx EvaluationContext, args object.List) (object.Obj, error) {
+	evalCtx := ctx.(*evalCtx)
 	if len(args) != 1 {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  fmt.Sprintf("qu: requires 1 argument, got %d", len(args)),
-			},
-		}, nil
+		argPos := uint16(0)
+		if len(args) > 0 {
+			argPos = args[0].Pos
+		}
+		return evalCtx.makeError(argPos, fmt.Sprintf("qu: requires 1 argument, got %d", len(args))), nil
 	}
 
 	return object.Obj{
@@ -381,14 +369,13 @@ func cmdQu(ctx EvaluationContext, args object.List) (object.Obj, error) {
 }
 
 func cmdUq(ctx EvaluationContext, args object.List) (object.Obj, error) {
+	evalCtx := ctx.(*evalCtx)
 	if len(args) != 1 {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  fmt.Sprintf("uq: requires 1 argument, got %d", len(args)),
-			},
-		}, nil
+		argPos := uint16(0)
+		if len(args) > 0 {
+			argPos = args[0].Pos
+		}
+		return evalCtx.makeError(argPos, fmt.Sprintf("uq: requires 1 argument, got %d", len(args))), nil
 	}
 
 	evaluated, err := ctx.Evaluate(args[0])
@@ -401,40 +388,21 @@ func cmdUq(ctx EvaluationContext, args object.List) (object.Obj, error) {
 	}
 
 	if evaluated.Type != object.OBJ_TYPE_SOME {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  fmt.Sprintf("uq: argument must be quoted (type 'some'), got %s", evaluated.Type),
-			},
-		}, nil
+		return evalCtx.makeErrorFromObj(args[0], fmt.Sprintf("uq: argument must be quoted (type 'some'), got %s", evaluated.Type)), nil
 	}
 
 	return evaluated.D.(object.Some), nil
 }
 
 func cmdUse(ctx EvaluationContext, args object.List) (object.Obj, error) {
-	if len(args) == 0 {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  "use: requires at least 1 argument",
-			},
-		}, nil
-	}
-
 	evalCtx := ctx.(*evalCtx)
+	if len(args) == 0 {
+		return evalCtx.makeError(0, "use: requires at least 1 argument"), nil
+	}
 
 	for _, arg := range args {
 		if arg.Type != object.OBJ_TYPE_STRING {
-			return object.Obj{
-				Type: object.OBJ_TYPE_ERROR,
-				D: object.Error{
-					Position: 0,
-					Message:  fmt.Sprintf("use: argument must be string, got %s", arg.Type),
-				},
-			}, nil
+			return evalCtx.makeErrorFromObj(arg, fmt.Sprintf("use: argument must be string, got %s", arg.Type)), nil
 		}
 
 		filePath := arg.D.(string)
@@ -464,25 +432,13 @@ func cmdUse(ctx EvaluationContext, args object.List) (object.Obj, error) {
 
 		content, err := evalCtx.fs.ReadFile(fullPath)
 		if err != nil {
-			return object.Obj{
-				Type: object.OBJ_TYPE_ERROR,
-				D: object.Error{
-					Position: 0,
-					Message:  fmt.Sprintf("use: failed to read file %s: %v", fullPath, err),
-				},
-			}, nil
+			return evalCtx.makeErrorFromObj(arg, fmt.Sprintf("use: failed to read file %s: %v", fullPath, err)), nil
 		}
 
 		parser := slp.NewParser(string(content))
 		items, err := parser.ParseAll()
 		if err != nil {
-			return object.Obj{
-				Type: object.OBJ_TYPE_ERROR,
-				D: object.Error{
-					Position: 0,
-					Message:  fmt.Sprintf("use: failed to parse file %s: %v", fullPath, err),
-				},
-			}, nil
+			return evalCtx.makeErrorFromObj(arg, fmt.Sprintf("use: failed to parse file %s: %v", fullPath, err)), nil
 		}
 
 		previousFilePath := evalCtx.currentFilePath
@@ -492,24 +448,12 @@ func cmdUse(ctx EvaluationContext, args object.List) (object.Obj, error) {
 			result, err := ctx.Evaluate(item)
 			if err != nil {
 				evalCtx.currentFilePath = previousFilePath
-				return object.Obj{
-					Type: object.OBJ_TYPE_ERROR,
-					D: object.Error{
-						Position: 0,
-						Message:  fmt.Sprintf("use: error evaluating file %s at item %d: %v", fullPath, itemIdx, err),
-					},
-				}, nil
+				return evalCtx.makeErrorFromObj(item, fmt.Sprintf("use: error evaluating file %s at item %d: %v", fullPath, itemIdx, err)), nil
 			}
 			if result.Type == object.OBJ_TYPE_ERROR {
 				evalCtx.currentFilePath = previousFilePath
 				errObj := result.D.(object.Error)
-				return object.Obj{
-					Type: object.OBJ_TYPE_ERROR,
-					D: object.Error{
-						Position: errObj.Position,
-						Message:  fmt.Sprintf("use: file %s item %d produced error: %s", fullPath, itemIdx, errObj.Message),
-					},
-				}, nil
+				return evalCtx.makeErrorFromObj(item, fmt.Sprintf("use: file %s item %d produced error: %s", fullPath, itemIdx, errObj.Message)), nil
 			}
 		}
 
@@ -520,26 +464,19 @@ func cmdUse(ctx EvaluationContext, args object.List) (object.Obj, error) {
 }
 
 func cmdExit(ctx EvaluationContext, args object.List) (object.Obj, error) {
+	evalCtx := ctx.(*evalCtx)
 	if len(args) != 1 {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  fmt.Sprintf("exit: requires 1 argument, got %d", len(args)),
-			},
-		}, nil
+		argPos := uint16(0)
+		if len(args) > 0 {
+			argPos = args[0].Pos
+		}
+		return evalCtx.makeError(argPos, fmt.Sprintf("exit: requires 1 argument, got %d", len(args))), nil
 	}
 
 	arg := args[0]
 
 	if arg.Type != object.OBJ_TYPE_INTEGER && arg.Type != object.OBJ_TYPE_IDENTIFIER {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  fmt.Sprintf("exit: argument must be integer or identifier, got %s", arg.Type),
-			},
-		}, nil
+		return evalCtx.makeErrorFromObj(arg, fmt.Sprintf("exit: argument must be integer or identifier, got %s", arg.Type)), nil
 	}
 
 	var exitCode int
@@ -565,14 +502,13 @@ func cmdExit(ctx EvaluationContext, args object.List) (object.Obj, error) {
 }
 
 func cmdIf(ctx EvaluationContext, args object.List) (object.Obj, error) {
+	evalCtx := ctx.(*evalCtx)
 	if len(args) != 3 {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  fmt.Sprintf("if: requires 3 arguments, got %d", len(args)),
-			},
-		}, nil
+		argPos := uint16(0)
+		if len(args) > 0 {
+			argPos = args[0].Pos
+		}
+		return evalCtx.makeError(argPos, fmt.Sprintf("if: requires 3 arguments, got %d", len(args))), nil
 	}
 
 	condition, err := ctx.Evaluate(args[0])
@@ -585,13 +521,7 @@ func cmdIf(ctx EvaluationContext, args object.List) (object.Obj, error) {
 	}
 
 	if condition.Type != object.OBJ_TYPE_INTEGER {
-		return object.Obj{
-			Type: object.OBJ_TYPE_ERROR,
-			D: object.Error{
-				Position: 0,
-				Message:  fmt.Sprintf("if: condition must evaluate to integer, got %s", condition.Type),
-			},
-		}, nil
+		return evalCtx.makeErrorFromObj(args[0], fmt.Sprintf("if: condition must evaluate to integer, got %s", condition.Type)), nil
 	}
 
 	condValue := condition.D.(object.Integer)

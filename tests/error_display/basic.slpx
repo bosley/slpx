@@ -1,0 +1,3 @@
+
+
+(set a 3 3) ; fail, requires two arguments

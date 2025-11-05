@@ -1,0 +1,7 @@
+(set mystr "hello")
+
+
+(set result (int/add 5 mystr))
+
+(putln result)
+

@@ -1,0 +1,6 @@
+(putln "Starting test...")
+
+(notfound)
+
+(putln "Done")
+

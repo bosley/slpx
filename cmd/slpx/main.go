@@ -13,6 +13,61 @@ import (
 	"github.com/bosley/slpx/pkg/slp"
 )
 
+func positionToLineCol(content string, position int) (line int, col int, lineStart int, lineEnd int) {
+	line = 1
+	col = 1
+	lineStart = 0
+
+	for i := 0; i < len(content) && i < position; i++ {
+		if content[i] == '\n' {
+			line++
+			col = 1
+			lineStart = i + 1
+		} else {
+			col++
+		}
+	}
+
+	lineEnd = lineStart
+	for lineEnd < len(content) && content[lineEnd] != '\n' {
+		lineEnd++
+	}
+
+	return line, col, lineStart, lineEnd
+}
+
+func formatError(err object.Error, sourceContent string) string {
+	var output strings.Builder
+
+	if err.File != "" {
+		if err.Position == 0 {
+			output.WriteString(fmt.Sprintf("Error in %s:\n", err.File))
+			output.WriteString(err.Message)
+		} else {
+			line, col, lineStart, lineEnd := positionToLineCol(sourceContent, err.Position)
+
+			output.WriteString(fmt.Sprintf("Error in %s at line %d, column %d:\n", err.File, line, col))
+
+			if lineStart < len(sourceContent) && lineEnd <= len(sourceContent) {
+				lineContent := sourceContent[lineStart:lineEnd]
+				output.WriteString(fmt.Sprintf("  %d | %s\n", line, lineContent))
+
+				output.WriteString("      ")
+				for i := 1; i < col; i++ {
+					output.WriteString(" ")
+				}
+				output.WriteString("^\n")
+			}
+
+			output.WriteString(err.Message)
+		}
+	} else {
+		output.WriteString(fmt.Sprintf("Error: %s", err.Message))
+	}
+
+	return output.String()
+}
+
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
@@ -46,6 +101,12 @@ func main() {
 	result, err := session.Evaluate(string(content))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Runtime error in %s: %v\n", filePath, err)
+		os.Exit(1)
+	}
+
+	if result.Type == object.OBJ_TYPE_ERROR {
+		errObj := result.D.(object.Error)
+		fmt.Fprintf(os.Stderr, "%s\n", formatError(errObj, string(content)))
 		os.Exit(1)
 	}
 
