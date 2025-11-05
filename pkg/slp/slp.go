@@ -6,6 +6,15 @@ import (
 	"github.com/bosley/slpx/pkg/object"
 )
 
+type ParseError struct {
+	Position int
+	Message  string
+}
+
+func (e *ParseError) Error() string {
+	return fmt.Sprintf("%s at position %d", e.Message, e.Position)
+}
+
 type ATOM string
 
 const (
@@ -106,7 +115,7 @@ func (p *Parser) parseList() (object.Obj, error) {
 	for p.Position < len(p.Target) {
 		p.skipWhitespace()
 		if p.Position >= len(p.Target) {
-			return object.Obj{}, fmt.Errorf("unclosed list at position %d", listStart)
+			return object.Obj{}, &ParseError{Position: listStart, Message: "unclosed list"}
 		}
 		if p.Target[p.Position] == ')' {
 			p.Position++
@@ -120,7 +129,7 @@ func (p *Parser) parseList() (object.Obj, error) {
 		items = append(items, item)
 	}
 
-	return object.Obj{}, fmt.Errorf("unclosed list at position %d", listStart)
+	return object.Obj{}, &ParseError{Position: listStart, Message: "unclosed list"}
 }
 
 func (p *Parser) parseSome() (object.Obj, error) {
@@ -139,7 +148,7 @@ func (p *Parser) parseSome() (object.Obj, error) {
 	value := p.Target[start:p.Position]
 
 	if value == "" {
-		return object.Obj{}, fmt.Errorf("empty identifier at position %d", start)
+		return object.Obj{}, &ParseError{Position: start, Message: "empty identifier"}
 	}
 
 	if numObj, ok := parseNumber(value, uint16(start)); ok {
@@ -170,7 +179,7 @@ func (p *Parser) parseQuotedString() (object.Obj, error) {
 		p.Position++
 	}
 
-	return object.Obj{}, fmt.Errorf("unclosed quoted string at position %d", start-1)
+	return object.Obj{}, &ParseError{Position: stringStart, Message: "unclosed quoted string"}
 }
 
 func unescapeString(s string) string {
@@ -311,11 +320,11 @@ func (p *Parser) parseErrorLiteral() (object.Obj, error) {
 	p.skipWhitespace()
 
 	if p.Position >= len(p.Target) {
-		return object.Obj{}, fmt.Errorf("expected list after @ at position %d", errorPos)
+		return object.Obj{}, &ParseError{Position: errorPos, Message: "expected list after @"}
 	}
 
 	if p.Target[p.Position] != '(' {
-		return object.Obj{}, fmt.Errorf("expected '(' after @ at position %d", errorPos)
+		return object.Obj{}, &ParseError{Position: errorPos, Message: "expected '(' after @"}
 	}
 
 	listObj, err := p.parseList()
@@ -324,7 +333,7 @@ func (p *Parser) parseErrorLiteral() (object.Obj, error) {
 	}
 
 	if listObj.Type != object.OBJ_TYPE_LIST {
-		return object.Obj{}, fmt.Errorf("expected list after @ at position %d", errorPos)
+		return object.Obj{}, &ParseError{Position: errorPos, Message: "expected list after @"}
 	}
 
 	list := listObj.D.(object.List)
@@ -352,11 +361,11 @@ func (p *Parser) parseMacroDefinition() (object.Obj, error) {
 	p.skipWhitespace()
 
 	if p.Position >= len(p.Target) {
-		return object.Obj{}, fmt.Errorf("expected pattern after $ at position %d", macroPos)
+		return object.Obj{}, &ParseError{Position: macroPos, Message: "expected pattern after $"}
 	}
 
 	if p.Target[p.Position] != '(' {
-		return object.Obj{}, fmt.Errorf("expected '(' after $ at position %d", macroPos)
+		return object.Obj{}, &ParseError{Position: macroPos, Message: "expected '(' after $"}
 	}
 
 	patternObj, err := p.parseList()
@@ -365,16 +374,16 @@ func (p *Parser) parseMacroDefinition() (object.Obj, error) {
 	}
 
 	if patternObj.Type != object.OBJ_TYPE_LIST {
-		return object.Obj{}, fmt.Errorf("expected pattern list after $ at position %d", macroPos)
+		return object.Obj{}, &ParseError{Position: macroPos, Message: "expected pattern list after $"}
 	}
 
 	pattern := patternObj.D.(object.List)
 	if len(pattern) == 0 {
-		return object.Obj{}, fmt.Errorf("macro pattern cannot be empty at position %d", macroPos)
+		return object.Obj{}, &ParseError{Position: macroPos, Message: "macro pattern cannot be empty"}
 	}
 
 	if pattern[0].Type != object.OBJ_TYPE_IDENTIFIER {
-		return object.Obj{}, fmt.Errorf("macro name must be identifier at position %d", macroPos)
+		return object.Obj{}, &ParseError{Position: macroPos, Message: "macro name must be identifier"}
 	}
 
 	macroName := string(pattern[0].D.(object.Identifier))
@@ -382,11 +391,11 @@ func (p *Parser) parseMacroDefinition() (object.Obj, error) {
 	var params []string
 	for i := 1; i < len(pattern); i++ {
 		if pattern[i].Type != object.OBJ_TYPE_IDENTIFIER {
-			return object.Obj{}, fmt.Errorf("macro parameter must be identifier at position %d", macroPos)
+			return object.Obj{}, &ParseError{Position: macroPos, Message: "macro parameter must be identifier"}
 		}
 		paramName := string(pattern[i].D.(object.Identifier))
 		if len(paramName) == 0 || paramName[0] != '?' {
-			return object.Obj{}, fmt.Errorf("macro parameter must start with ? at position %d", macroPos)
+			return object.Obj{}, &ParseError{Position: macroPos, Message: "macro parameter must start with ?"}
 		}
 		params = append(params, paramName)
 	}
@@ -427,11 +436,11 @@ func (p *Parser) expandMacroIfNeeded(listObj object.Obj) (object.Obj, error) {
 	macroName := macroCallName[1:]
 	macroDef, exists := p.Macros[macroName]
 	if !exists {
-		return object.Obj{}, fmt.Errorf("undefined macro $%s", macroName)
+		return object.Obj{}, &ParseError{Position: int(list[0].Pos), Message: fmt.Sprintf("undefined macro $%s", macroName)}
 	}
 
 	if len(list)-1 != len(macroDef.Parameters) {
-		return object.Obj{}, fmt.Errorf("macro $%s expects %d arguments, got %d", macroName, len(macroDef.Parameters), len(list)-1)
+		return object.Obj{}, &ParseError{Position: int(list[0].Pos), Message: fmt.Sprintf("macro $%s expects %d arguments, got %d", macroName, len(macroDef.Parameters), len(list)-1)}
 	}
 
 	bindings := make(map[string]object.Obj)

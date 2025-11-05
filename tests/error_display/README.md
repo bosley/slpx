@@ -38,6 +38,25 @@ This directory contains test files demonstrating the precise error location repo
 - Tests that position tracking works for function definitions
 - Shows error at line 5, column 4
 
+### `unclosed.slpx`
+**Error:** Parse error - unclosed list
+- Tests that parse errors (not runtime errors) are properly formatted
+- Shows error at line 3, column 1 pointing to the opening parenthesis
+
+## Error Types
+
+### Parse Errors
+Caught during parsing (syntax errors):
+- Unclosed lists/strings
+- Invalid syntax
+- Macro errors
+
+### Runtime Errors  
+Caught during evaluation (semantic errors):
+- Type mismatches
+- Undefined identifiers
+- Wrong argument counts
+
 ## Error Format
 
 All errors display:

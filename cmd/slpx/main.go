@@ -100,7 +100,25 @@ func main() {
 
 	result, err := session.Evaluate(string(content))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Runtime error in %s: %v\n", filePath, err)
+		if parseErr, ok := err.(*slp.ParseError); ok {
+			line, col, lineStart, lineEnd := positionToLineCol(string(content), parseErr.Position)
+			fmt.Fprintf(os.Stderr, "Parse error in %s at line %d, column %d:\n", absFilePath, line, col)
+
+			if lineStart < len(content) && lineEnd <= len(content) {
+				lineContent := string(content[lineStart:lineEnd])
+				fmt.Fprintf(os.Stderr, "  %d | %s\n", line, lineContent)
+
+				fmt.Fprintf(os.Stderr, "      ")
+				for i := 1; i < col; i++ {
+					fmt.Fprintf(os.Stderr, " ")
+				}
+				fmt.Fprintf(os.Stderr, "^\n")
+			}
+
+			fmt.Fprintf(os.Stderr, "%s\n", parseErr.Message)
+		} else {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
 		os.Exit(1)
 	}
 
