@@ -1,0 +1,744 @@
+(use "bootstrap.slpx")
+
+(putln "=== Numbers Tests ===")
+
+(set test_int_add (fn () :I
+    (int/eq (int/add 5 3) 8)))
+(ASSERT_TRUE (test_int_add) "int/add: 5 + 3 should equal 8")
+
+(set test_int_add_negative (fn () :I
+    (int/eq (int/add -5 3) -2)))
+(ASSERT_TRUE (test_int_add_negative) "int/add: -5 + 3 should equal -2")
+
+(set test_int_add_zero (fn () :I
+    (int/eq (int/add 0 0) 0)))
+(ASSERT_TRUE (test_int_add_zero) "int/add: 0 + 0 should equal 0")
+
+(putln "int/add passed")
+
+(set test_int_sub (fn () :I
+    (int/eq (int/sub 10 3) 7)))
+(ASSERT_TRUE (test_int_sub) "int/sub: 10 - 3 should equal 7")
+
+(set test_int_sub_negative (fn () :I
+    (int/eq (int/sub 3 10) -7)))
+(ASSERT_TRUE (test_int_sub_negative) "int/sub: 3 - 10 should equal -7")
+
+(set test_int_sub_zero (fn () :I
+    (int/eq (int/sub 5 0) 5)))
+(ASSERT_TRUE (test_int_sub_zero) "int/sub: 5 - 0 should equal 5")
+
+(putln "int/sub passed")
+
+(set test_int_mul (fn () :I
+    (int/eq (int/mul 5 3) 15)))
+(ASSERT_TRUE (test_int_mul) "int/mul: 5 * 3 should equal 15")
+
+(set test_int_mul_negative (fn () :I
+    (int/eq (int/mul -5 3) -15)))
+(ASSERT_TRUE (test_int_mul_negative) "int/mul: -5 * 3 should equal -15")
+
+(set test_int_mul_zero (fn () :I
+    (int/eq (int/mul 5 0) 0)))
+(ASSERT_TRUE (test_int_mul_zero) "int/mul: 5 * 0 should equal 0")
+
+(set test_int_mul_large (fn () :I
+    (int/eq (int/mul 100 100) 10000)))
+(ASSERT_TRUE (test_int_mul_large) "int/mul: 100 * 100 should equal 10000")
+
+(putln "int/mul passed")
+
+(set test_int_div (fn () :I
+    (int/eq (int/div 10 2) 5)))
+(ASSERT_TRUE (test_int_div) "int/div: 10 / 2 should equal 5")
+
+(set test_int_div_truncate (fn () :I
+    (int/eq (int/div 10 3) 3)))
+(ASSERT_TRUE (test_int_div_truncate) "int/div: 10 / 3 should truncate to 3")
+
+(set test_int_div_negative (fn () :I
+    (int/eq (int/div -10 3) -3)))
+(ASSERT_TRUE (test_int_div_negative) "int/div: -10 / 3 should truncate to -3")
+
+(set test_int_div_by_zero (fn () :I
+    (try
+        (do
+            (int/div 10 0)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_div_by_zero) "int/div: division by zero should error")
+
+(putln "int/div passed")
+
+(set test_int_mod (fn () :I
+    (int/eq (int/mod 10 3) 1)))
+(ASSERT_TRUE (test_int_mod) "int/mod: 10 mod 3 should equal 1")
+
+(set test_int_mod_exact (fn () :I
+    (int/eq (int/mod 10 5) 0)))
+(ASSERT_TRUE (test_int_mod_exact) "int/mod: 10 mod 5 should equal 0")
+
+(set test_int_mod_larger (fn () :I
+    (int/eq (int/mod 3 10) 3)))
+(ASSERT_TRUE (test_int_mod_larger) "int/mod: 3 mod 10 should equal 3")
+
+(set test_int_mod_by_zero (fn () :I
+    (try
+        (do
+            (int/mod 10 0)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_mod_by_zero) "int/mod: modulo by zero should error")
+
+(putln "int/mod passed")
+
+(set test_int_pow_basic (fn () :I
+    (int/eq (int/pow 2 3) 8)))
+(ASSERT_TRUE (test_int_pow_basic) "int/pow: 2^3 should equal 8")
+
+(set test_int_pow_zero (fn () :I
+    (int/eq (int/pow 5 0) 1)))
+(ASSERT_TRUE (test_int_pow_zero) "int/pow: 5^0 should equal 1")
+
+(set test_int_pow_one (fn () :I
+    (int/eq (int/pow 5 1) 5)))
+(ASSERT_TRUE (test_int_pow_one) "int/pow: 5^1 should equal 5")
+
+(set test_int_pow_large (fn () :I
+    (int/eq (int/pow 2 10) 1024)))
+(ASSERT_TRUE (test_int_pow_large) "int/pow: 2^10 should equal 1024")
+
+(set test_int_pow_negative_exp (fn () :I
+    (try
+        (do
+            (int/pow 2 -1)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_pow_negative_exp) "int/pow: negative exponent should error")
+
+(putln "int/pow passed")
+
+(set test_int_sum_one (fn () :I
+    (int/eq (int/sum 5) 5)))
+(ASSERT_TRUE (test_int_sum_one) "int/sum: single argument should return value")
+
+(set test_int_sum_multiple (fn () :I
+    (int/eq (int/sum 1 2 3 4 5) 15)))
+(ASSERT_TRUE (test_int_sum_multiple) "int/sum: 1+2+3+4+5 should equal 15")
+
+(set test_int_sum_negative (fn () :I
+    (int/eq (int/sum -5 10 -3) 2)))
+(ASSERT_TRUE (test_int_sum_negative) "int/sum: should handle negative numbers")
+
+(putln "int/sum passed")
+
+(set test_real_add (fn () :I
+    (real/eq (real/add 5.5 3.2) 8.7)))
+(ASSERT_TRUE (test_real_add) "real/add: 5.5 + 3.2 should equal 8.7")
+
+(set test_real_add_negative (fn () :I
+    (real/eq (real/add -5.5 3.2) -2.3)))
+(ASSERT_TRUE (test_real_add_negative) "real/add: should handle negative numbers")
+
+(set test_real_add_zero (fn () :I
+    (real/eq (real/add 0.0 0.0) 0.0)))
+(ASSERT_TRUE (test_real_add_zero) "real/add: 0.0 + 0.0 should equal 0.0")
+
+(putln "real/add passed")
+
+(set test_real_sub (fn () :I
+    (real/eq (real/sub 10.5 3.2) 7.3)))
+(ASSERT_TRUE (test_real_sub) "real/sub: 10.5 - 3.2 should equal 7.3")
+
+(set test_real_sub_negative (fn () :I
+    (real/lt (real/sub 3.2 10.5) 0.0)))
+(ASSERT_TRUE (test_real_sub_negative) "real/sub: 3.2 - 10.5 should be negative")
+
+(putln "real/sub passed")
+
+(set test_real_mul (fn () :I
+    (real/eq (real/mul 5.0 3.0) 15.0)))
+(ASSERT_TRUE (test_real_mul) "real/mul: 5.0 * 3.0 should equal 15.0")
+
+(set test_real_mul_negative (fn () :I
+    (real/eq (real/mul -5.0 3.0) -15.0)))
+(ASSERT_TRUE (test_real_mul_negative) "real/mul: should handle negative numbers")
+
+(set test_real_mul_zero (fn () :I
+    (real/eq (real/mul 5.0 0.0) 0.0)))
+(ASSERT_TRUE (test_real_mul_zero) "real/mul: 5.0 * 0.0 should equal 0.0")
+
+(putln "real/mul passed")
+
+(set test_real_div (fn () :I
+    (real/eq (real/div 10.0 2.0) 5.0)))
+(ASSERT_TRUE (test_real_div) "real/div: 10.0 / 2.0 should equal 5.0")
+
+(set test_real_div_fraction (fn () :I
+    (real/gt (real/div 10.0 3.0) 3.0)))
+(ASSERT_TRUE (test_real_div_fraction) "real/div: 10.0 / 3.0 should be greater than 3.0")
+
+(set test_real_div_by_zero (fn () :I
+    (try
+        (do
+            (real/div 10.0 0.0)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_div_by_zero) "real/div: division by zero should error")
+
+(putln "real/div passed")
+
+(set test_real_pow (fn () :I
+    (real/eq (real/pow 2.0 3.0) 8.0)))
+(ASSERT_TRUE (test_real_pow) "real/pow: 2.0^3.0 should equal 8.0")
+
+(set test_real_pow_sqrt (fn () :I
+    (real/gt (real/pow 4.0 0.5) 1.9)))
+(ASSERT_TRUE (test_real_pow_sqrt) "real/pow: 4.0^0.5 should be approximately 2.0")
+
+(set test_real_pow_negative_base (fn () :I
+    (real/eq (real/pow -2.0 2.0) 4.0)))
+(ASSERT_TRUE (test_real_pow_negative_base) "real/pow: (-2.0)^2.0 should equal 4.0")
+
+(set test_real_pow_nan_error (fn () :I
+    (try
+        (do
+            (real/pow -1.0 0.5)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_pow_nan_error) "real/pow: should error on NaN result")
+
+(putln "real/pow passed")
+
+(set test_real_sum_one (fn () :I
+    (real/eq (real/sum 5.5) 5.5)))
+(ASSERT_TRUE (test_real_sum_one) "real/sum: single argument should return value")
+
+(set test_real_sum_multiple (fn () :I
+    (real/eq (real/sum 1.5 2.5 3.5) 7.5)))
+(ASSERT_TRUE (test_real_sum_multiple) "real/sum: 1.5+2.5+3.5 should equal 7.5")
+
+(putln "real/sum passed")
+
+(set test_int_to_real (fn () :I
+    (real/eq (int/real 42) 42.0)))
+(ASSERT_TRUE (test_int_to_real) "int/real: 42 should convert to 42.0")
+
+(set test_int_to_real_negative (fn () :I
+    (real/eq (int/real -10) -10.0)))
+(ASSERT_TRUE (test_int_to_real_negative) "int/real: -10 should convert to -10.0")
+
+(set test_int_to_real_zero (fn () :I
+    (real/eq (int/real 0) 0.0)))
+(ASSERT_TRUE (test_int_to_real_zero) "int/real: 0 should convert to 0.0")
+
+(putln "int/real passed")
+
+(set test_real_to_int (fn () :I
+    (int/eq (real/int 42.0) 42)))
+(ASSERT_TRUE (test_real_to_int) "real/int: 42.0 should convert to 42")
+
+(set test_real_to_int_floor (fn () :I
+    (int/eq (real/int 3.9) 3)))
+(ASSERT_TRUE (test_real_to_int_floor) "real/int: 3.9 should floor to 3")
+
+(set test_real_to_int_negative_floor (fn () :I
+    (int/eq (real/int -3.1) -4)))
+(ASSERT_TRUE (test_real_to_int_negative_floor) "real/int: -3.1 should floor to -4")
+
+(putln "real/int passed")
+
+(set test_int_eq_true (fn () :I
+    (int/eq 10 10)))
+(ASSERT_TRUE (test_int_eq_true) "int/eq: 10 == 10 should be true")
+
+(set test_int_eq_false (fn () :I
+    (int/eq (int/eq 10 20) 0)))
+(ASSERT_TRUE (test_int_eq_false) "int/eq: 10 == 20 should be false")
+
+(set test_int_eq_negative (fn () :I
+    (int/eq -5 -5)))
+(ASSERT_TRUE (test_int_eq_negative) "int/eq: -5 == -5 should be true")
+
+(putln "int/eq passed")
+
+(set test_int_gt_true (fn () :I
+    (int/gt 20 10)))
+(ASSERT_TRUE (test_int_gt_true) "int/gt: 20 > 10 should be true")
+
+(set test_int_gt_false (fn () :I
+    (int/eq (int/gt 10 20) 0)))
+(ASSERT_TRUE (test_int_gt_false) "int/gt: 10 > 20 should be false")
+
+(set test_int_gt_equal (fn () :I
+    (int/eq (int/gt 10 10) 0)))
+(ASSERT_TRUE (test_int_gt_equal) "int/gt: 10 > 10 should be false")
+
+(putln "int/gt passed")
+
+(set test_int_gte_true (fn () :I
+    (int/gte 20 10)))
+(ASSERT_TRUE (test_int_gte_true) "int/gte: 20 >= 10 should be true")
+
+(set test_int_gte_equal (fn () :I
+    (int/gte 10 10)))
+(ASSERT_TRUE (test_int_gte_equal) "int/gte: 10 >= 10 should be true")
+
+(set test_int_gte_false (fn () :I
+    (int/eq (int/gte 10 20) 0)))
+(ASSERT_TRUE (test_int_gte_false) "int/gte: 10 >= 20 should be false")
+
+(putln "int/gte passed")
+
+(set test_int_lt_true (fn () :I
+    (int/lt 10 20)))
+(ASSERT_TRUE (test_int_lt_true) "int/lt: 10 < 20 should be true")
+
+(set test_int_lt_false (fn () :I
+    (int/eq (int/lt 20 10) 0)))
+(ASSERT_TRUE (test_int_lt_false) "int/lt: 20 < 10 should be false")
+
+(set test_int_lt_equal (fn () :I
+    (int/eq (int/lt 10 10) 0)))
+(ASSERT_TRUE (test_int_lt_equal) "int/lt: 10 < 10 should be false")
+
+(putln "int/lt passed")
+
+(set test_int_lte_true (fn () :I
+    (int/lte 10 20)))
+(ASSERT_TRUE (test_int_lte_true) "int/lte: 10 <= 20 should be true")
+
+(set test_int_lte_equal (fn () :I
+    (int/lte 10 10)))
+(ASSERT_TRUE (test_int_lte_equal) "int/lte: 10 <= 10 should be true")
+
+(set test_int_lte_false (fn () :I
+    (int/eq (int/lte 20 10) 0)))
+(ASSERT_TRUE (test_int_lte_false) "int/lte: 20 <= 10 should be false")
+
+(putln "int/lte passed")
+
+(set test_real_eq_true (fn () :I
+    (real/eq 3.14 3.14)))
+(ASSERT_TRUE (test_real_eq_true) "real/eq: 3.14 == 3.14 should be true")
+
+(set test_real_eq_false (fn () :I
+    (int/eq (real/eq 3.14 2.71) 0)))
+(ASSERT_TRUE (test_real_eq_false) "real/eq: 3.14 == 2.71 should be false")
+
+(putln "real/eq passed")
+
+(set test_real_gt_true (fn () :I
+    (real/gt 3.14 2.71)))
+(ASSERT_TRUE (test_real_gt_true) "real/gt: 3.14 > 2.71 should be true")
+
+(set test_real_gt_false (fn () :I
+    (int/eq (real/gt 2.71 3.14) 0)))
+(ASSERT_TRUE (test_real_gt_false) "real/gt: 2.71 > 3.14 should be false")
+
+(putln "real/gt passed")
+
+(set test_real_gte_true (fn () :I
+    (real/gte 3.14 2.71)))
+(ASSERT_TRUE (test_real_gte_true) "real/gte: 3.14 >= 2.71 should be true")
+
+(set test_real_gte_equal (fn () :I
+    (real/gte 3.14 3.14)))
+(ASSERT_TRUE (test_real_gte_equal) "real/gte: 3.14 >= 3.14 should be true")
+
+(putln "real/gte passed")
+
+(set test_real_lt_true (fn () :I
+    (real/lt 2.71 3.14)))
+(ASSERT_TRUE (test_real_lt_true) "real/lt: 2.71 < 3.14 should be true")
+
+(set test_real_lt_false (fn () :I
+    (int/eq (real/lt 3.14 2.71) 0)))
+(ASSERT_TRUE (test_real_lt_false) "real/lt: 3.14 < 2.71 should be false")
+
+(putln "real/lt passed")
+
+(set test_real_lte_true (fn () :I
+    (real/lte 2.71 3.14)))
+(ASSERT_TRUE (test_real_lte_true) "real/lte: 2.71 <= 3.14 should be true")
+
+(set test_real_lte_equal (fn () :I
+    (real/lte 3.14 3.14)))
+(ASSERT_TRUE (test_real_lte_equal) "real/lte: 3.14 <= 3.14 should be true")
+
+(putln "real/lte passed")
+
+(set test_complex_expr (fn () :I
+    (int/eq
+        (int/mul (int/add 5 3) (int/sub 10 2))
+        64)))
+(ASSERT_TRUE (test_complex_expr) "complex: (5+3)*(10-2) should equal 64")
+
+(set test_variadic_sum_squares (fn () :I
+    (int/eq
+        (int/sum
+            (int/pow 1 2)
+            (int/pow 2 2)
+            (int/pow 3 2)
+            (int/pow 4 2))
+        30)))
+(ASSERT_TRUE (test_variadic_sum_squares) "complex: sum of squares 1^2+2^2+3^2+4^2 should equal 30")
+
+(set test_conversion_chain (fn () :I
+    (int/eq
+        (real/int (real/div (real/add 10.5 5.5) (real/add 2.0 2.0)))
+        4)))
+(ASSERT_TRUE (test_conversion_chain) "complex: (10.5+5.5)/(2.0+2.0) should floor to 4")
+
+(putln "Complex expressions passed")
+
+(set test_int_sum_type_error (fn () :I
+    (try
+        (do
+            (int/sum 1 2 "bad")
+            0)
+        1)))
+(ASSERT_TRUE (test_int_sum_type_error) "int/sum: should reject non-integer argument")
+
+(set test_int_sum_mixed_types (fn () :I
+    (try
+        (do
+            (int/sum 1 2.5 3)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_sum_mixed_types) "int/sum: should reject real in integer sum")
+
+(putln "int/sum error cases passed")
+
+(set test_real_sum_type_error (fn () :I
+    (try
+        (do
+            (real/sum 1.5 2.5 "bad")
+            0)
+        1)))
+(ASSERT_TRUE (test_real_sum_type_error) "real/sum: should reject non-real argument")
+
+(set test_real_sum_int_type (fn () :I
+    (try
+        (do
+            (real/sum 1.5 2 3.5)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_sum_int_type) "real/sum: should reject integer in real sum")
+
+(putln "real/sum error cases passed")
+
+(set test_int_add_string (fn () :I
+    (try
+        (do
+            (int/add 5 "bad")
+            0)
+        1)))
+(ASSERT_TRUE (test_int_add_string) "int/add: should reject string argument")
+
+(set test_int_add_real (fn () :I
+    (try
+        (do
+            (int/add 5 3.5)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_add_real) "int/add: should reject real argument")
+
+(set test_int_sub_wrong_type (fn () :I
+    (try
+        (do
+            (int/sub "bad" 5)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_sub_wrong_type) "int/sub: should reject string as first arg")
+
+(set test_int_mul_wrong_type (fn () :I
+    (try
+        (do
+            (int/mul 5 (qu (1 2 3)))
+            0)
+        1)))
+(ASSERT_TRUE (test_int_mul_wrong_type) "int/mul: should reject list argument")
+
+(set test_int_div_wrong_type (fn () :I
+    (try
+        (do
+            (int/div 10 "2")
+            0)
+        1)))
+(ASSERT_TRUE (test_int_div_wrong_type) "int/div: should reject string argument")
+
+(set test_int_mod_wrong_type (fn () :I
+    (try
+        (do
+            (int/mod 10 3.5)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_mod_wrong_type) "int/mod: should reject real argument")
+
+(set test_int_pow_wrong_type (fn () :I
+    (try
+        (do
+            (int/pow 2 "3")
+            0)
+        1)))
+(ASSERT_TRUE (test_int_pow_wrong_type) "int/pow: should reject string exponent")
+
+(putln "Integer arithmetic type errors passed")
+
+(set test_real_add_string (fn () :I
+    (try
+        (do
+            (real/add 5.5 "bad")
+            0)
+        1)))
+(ASSERT_TRUE (test_real_add_string) "real/add: should reject string argument")
+
+(set test_real_add_int (fn () :I
+    (try
+        (do
+            (real/add 5.5 3)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_add_int) "real/add: should reject integer argument")
+
+(set test_real_sub_wrong_type (fn () :I
+    (try
+        (do
+            (real/sub 10.5 (qu (1 2)))
+            0)
+        1)))
+(ASSERT_TRUE (test_real_sub_wrong_type) "real/sub: should reject list argument")
+
+(set test_real_mul_wrong_type (fn () :I
+    (try
+        (do
+            (real/mul "bad" 3.0)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_mul_wrong_type) "real/mul: should reject string as first arg")
+
+(set test_real_div_wrong_type (fn () :I
+    (try
+        (do
+            (real/div 10.0 2)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_div_wrong_type) "real/div: should reject integer argument")
+
+(set test_real_pow_wrong_type (fn () :I
+    (try
+        (do
+            (real/pow 2.0 "3")
+            0)
+        1)))
+(ASSERT_TRUE (test_real_pow_wrong_type) "real/pow: should reject string exponent")
+
+(putln "Real arithmetic type errors passed")
+
+(set test_int_real_wrong_type (fn () :I
+    (try
+        (do
+            (int/real "42")
+            0)
+        1)))
+(ASSERT_TRUE (test_int_real_wrong_type) "int/real: should reject string argument")
+
+(set test_int_real_already_real (fn () :I
+    (try
+        (do
+            (int/real 42.5)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_real_already_real) "int/real: should reject real argument")
+
+(set test_real_int_wrong_type (fn () :I
+    (try
+        (do
+            (real/int "42")
+            0)
+        1)))
+(ASSERT_TRUE (test_real_int_wrong_type) "real/int: should reject string argument")
+
+(set test_real_int_already_int (fn () :I
+    (try
+        (do
+            (real/int 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_int_already_int) "real/int: should reject integer argument")
+
+(putln "Type conversion errors passed")
+
+(set test_int_eq_wrong_type (fn () :I
+    (try
+        (do
+            (int/eq 10 "10")
+            0)
+        1)))
+(ASSERT_TRUE (test_int_eq_wrong_type) "int/eq: should reject string argument")
+
+(set test_int_eq_real_arg (fn () :I
+    (try
+        (do
+            (int/eq 10 10.0)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_eq_real_arg) "int/eq: should reject real argument")
+
+(set test_int_gt_wrong_type (fn () :I
+    (try
+        (do
+            (int/gt 20 "10")
+            0)
+        1)))
+(ASSERT_TRUE (test_int_gt_wrong_type) "int/gt: should reject string argument")
+
+(set test_int_gte_wrong_type (fn () :I
+    (try
+        (do
+            (int/gte 20 10.5)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_gte_wrong_type) "int/gte: should reject real argument")
+
+(set test_int_lt_wrong_type (fn () :I
+    (try
+        (do
+            (int/lt "10" 20)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_lt_wrong_type) "int/lt: should reject string as first arg")
+
+(set test_int_lte_wrong_type (fn () :I
+    (try
+        (do
+            (int/lte 10 (qu (20)))
+            0)
+        1)))
+(ASSERT_TRUE (test_int_lte_wrong_type) "int/lte: should reject list argument")
+
+(putln "Integer comparison type errors passed")
+
+(set test_real_eq_wrong_type (fn () :I
+    (try
+        (do
+            (real/eq 3.14 "3.14")
+            0)
+        1)))
+(ASSERT_TRUE (test_real_eq_wrong_type) "real/eq: should reject string argument")
+
+(set test_real_eq_int_arg (fn () :I
+    (try
+        (do
+            (real/eq 3.14 3)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_eq_int_arg) "real/eq: should reject integer argument")
+
+(set test_real_gt_wrong_type (fn () :I
+    (try
+        (do
+            (real/gt 3.14 "2.71")
+            0)
+        1)))
+(ASSERT_TRUE (test_real_gt_wrong_type) "real/gt: should reject string argument")
+
+(set test_real_gte_wrong_type (fn () :I
+    (try
+        (do
+            (real/gte 3.14 2)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_gte_wrong_type) "real/gte: should reject integer argument")
+
+(set test_real_lt_wrong_type (fn () :I
+    (try
+        (do
+            (real/lt "2.71" 3.14)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_lt_wrong_type) "real/lt: should reject string as first arg")
+
+(set test_real_lte_wrong_type (fn () :I
+    (try
+        (do
+            (real/lte 2.71 (qu (3.14)))
+            0)
+        1)))
+(ASSERT_TRUE (test_real_lte_wrong_type) "real/lte: should reject list argument")
+
+(putln "Real comparison type errors passed")
+
+(set test_int_div_zero_numerator (fn () :I
+    (int/eq (int/div 0 5) 0)))
+(ASSERT_TRUE (test_int_div_zero_numerator) "int/div: 0 / 5 should equal 0")
+
+(set test_int_mod_zero_numerator (fn () :I
+    (int/eq (int/mod 0 5) 0)))
+(ASSERT_TRUE (test_int_mod_zero_numerator) "int/mod: 0 mod 5 should equal 0")
+
+(set test_int_pow_zero_base (fn () :I
+    (int/eq (int/pow 0 5) 0)))
+(ASSERT_TRUE (test_int_pow_zero_base) "int/pow: 0^5 should equal 0")
+
+(set test_int_pow_zero_zero (fn () :I
+    (int/eq (int/pow 0 0) 1)))
+(ASSERT_TRUE (test_int_pow_zero_zero) "int/pow: 0^0 should equal 1")
+
+(set test_real_div_zero_numerator (fn () :I
+    (real/eq (real/div 0.0 5.0) 0.0)))
+(ASSERT_TRUE (test_real_div_zero_numerator) "real/div: 0.0 / 5.0 should equal 0.0")
+
+(putln "Edge cases with zero passed")
+
+(set test_negative_mod (fn () :I
+    (int/eq (int/mod -10 3) -1)))
+(ASSERT_TRUE (test_negative_mod) "int/mod: -10 mod 3 should equal -1")
+
+(set test_negative_both_mod (fn () :I
+    (int/eq (int/mod -10 -3) -1)))
+(ASSERT_TRUE (test_negative_both_mod) "int/mod: -10 mod -3 should equal -1")
+
+(set test_negative_divisor_mod (fn () :I
+    (int/eq (int/mod 10 -3) 1)))
+(ASSERT_TRUE (test_negative_divisor_mod) "int/mod: 10 mod -3 should equal 1")
+
+(set test_negative_base_pow (fn () :I
+    (int/eq (int/pow -2 3) -8)))
+(ASSERT_TRUE (test_negative_base_pow) "int/pow: (-2)^3 should equal -8")
+
+(set test_negative_base_even_pow (fn () :I
+    (int/eq (int/pow -2 4) 16)))
+(ASSERT_TRUE (test_negative_base_even_pow) "int/pow: (-2)^4 should equal 16")
+
+(putln "Negative number edge cases passed")
+
+(set test_comparison_boundary (fn () :I
+    (int/gt (int/add 2147483647 1) 2147483647)))
+(ASSERT_TRUE (test_comparison_boundary) "large int: addition should handle overflow")
+
+(set test_real_precision (fn () :I
+    (real/gt (real/add 0.1 0.2) 0.29)))
+(ASSERT_TRUE (test_real_precision) "real: 0.1 + 0.2 should be greater than 0.29")
+
+(putln "Boundary and precision cases passed")
+
+(putln "")
+(putln "=================================")
+(putln "ALL NUMBERS TESTS PASSED")
+(putln "=================================")
+(putln "")
+(putln "Test summary:")
+(putln "  - Integer arithmetic (7 functions)")
+(putln "  - Real arithmetic (6 functions)")
+(putln "  - Type conversions (2 functions)")
+(putln "  - Integer comparisons (5 functions)")
+(putln "  - Real comparisons (5 functions)")
+(putln "  - Complex expressions")
+(putln "  - Type mismatch errors (32 cases)")
+(putln "  - Division/modulo by zero errors")
+(putln "  - Negative exponent errors")
+(putln "  - Edge cases (zero, negative, boundaries)")
+(putln "  - Precision and overflow cases")
+(putln "")

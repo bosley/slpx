@@ -1,0 +1,842 @@
+(use "bootstrap.slpx")
+
+(putln "=== List Tests ===")
+
+(set test_list_new_basic (fn () :I
+    (set lst (list/new 3 0))
+    (int/eq (list/len lst) 3)))
+(ASSERT_TRUE (test_list_new_basic) "list/new: should create list of specified length")
+
+(set test_list_new_filled (fn () :I
+    (set lst (list/new 3 42))
+    (if (int/eq (list/get lst 0) 42)
+        (if (int/eq (list/get lst 1) 42)
+            (if (int/eq (list/get lst 2) 42)
+                1
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_list_new_filled) "list/new: should fill with default value")
+
+(set test_list_new_zero (fn () :I
+    (set lst (list/new 0 42))
+    (int/eq (list/len lst) 0)))
+(ASSERT_TRUE (test_list_new_zero) "list/new: zero length should create empty list")
+
+(set test_list_new_negative (fn () :I
+    (try
+        (do
+            (list/new -5 0)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_new_negative) "list/new: negative length should error")
+
+(set test_list_new_deep_copy (fn () :I
+    (set lst (list/new 2 (qu (1 2))))
+    (set first (list/get lst 0))
+    (set second (list/get lst 1))
+    (int/eq (reflect/equal? first second) 1)))
+(ASSERT_TRUE (test_list_new_deep_copy) "list/new: should deep copy default value")
+
+(putln "list/new passed")
+
+(set test_list_len_basic (fn () :I
+    (set lst (qu (1 2 3 4 5)))
+    (int/eq (list/len (uq lst)) 5)))
+(ASSERT_TRUE (test_list_len_basic) "list/len: should return correct length")
+
+(set test_list_len_empty (fn () :I
+    (int/eq (list/len (uq (qu ()))) 0)))
+(ASSERT_TRUE (test_list_len_empty) "list/len: empty list should return 0")
+
+(set test_list_len_type_error (fn () :I
+    (try
+        (do
+            (list/len 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_len_type_error) "list/len: should reject non-list")
+
+(putln "list/len passed")
+
+(set test_list_clear_basic (fn () :I
+    (set lst (qu (1 2 3)))
+    (set cleared (list/clear (uq lst)))
+    (int/eq (list/len cleared) 0)))
+(ASSERT_TRUE (test_list_clear_basic) "list/clear: should return empty list")
+
+(set test_list_clear_type_error (fn () :I
+    (try
+        (do
+            (list/clear "not a list")
+            0)
+        1)))
+(ASSERT_TRUE (test_list_clear_type_error) "list/clear: should reject non-list")
+
+(putln "list/clear passed")
+
+(set test_list_empty_true (fn () :I
+    (list/empty (uq (qu ())))))
+(ASSERT_TRUE (test_list_empty_true) "list/empty: empty list should return 1")
+
+(set test_list_empty_false (fn () :I
+    (set lst (qu (1)))
+    (int/eq (list/empty (uq lst)) 0)))
+(ASSERT_TRUE (test_list_empty_false) "list/empty: non-empty list should return 0")
+
+(set test_list_empty_type_error (fn () :I
+    (try
+        (do
+            (list/empty 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_empty_type_error) "list/empty: should reject non-list")
+
+(putln "list/empty passed")
+
+(set test_list_get_basic (fn () :I
+    (set lst (qu (10 20 30)))
+    (int/eq (list/get (uq lst) 1) 20)))
+(ASSERT_TRUE (test_list_get_basic) "list/get: should return element at index")
+
+(set test_list_get_first (fn () :I
+    (set lst (qu (42 99)))
+    (int/eq (list/get (uq lst) 0) 42)))
+(ASSERT_TRUE (test_list_get_first) "list/get: should get first element")
+
+(set test_list_get_out_of_bounds (fn () :I
+    (try
+        (do
+            (set lst (qu (1 2 3)))
+            (list/get (uq lst) 10)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_get_out_of_bounds) "list/get: should error on out of bounds")
+
+(set test_list_get_negative_index (fn () :I
+    (try
+        (do
+            (set lst (qu (1 2 3)))
+            (list/get (uq lst) -1)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_get_negative_index) "list/get: should error on negative index")
+
+(putln "list/get passed")
+
+(set test_list_set_basic (fn () :I
+    (set lst (list/new 3 0))
+    (set lst (list/set lst 1 99))
+    (int/eq (list/get lst 1) 99)))
+(ASSERT_TRUE (test_list_set_basic) "list/set: should set element at index")
+
+(set test_list_set_out_of_bounds (fn () :I
+    (try
+        (do
+            (set lst (list/new 3 0))
+            (list/set lst 10 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_set_out_of_bounds) "list/set: should error on out of bounds")
+
+(set test_list_set_negative_index (fn () :I
+    (try
+        (do
+            (set lst (list/new 3 0))
+            (list/set lst -1 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_set_negative_index) "list/set: should error on negative index")
+
+(putln "list/set passed")
+
+(set test_list_first_basic (fn () :I
+    (set lst (qu (42 99 100)))
+    (int/eq (list/first (uq lst)) 42)))
+(ASSERT_TRUE (test_list_first_basic) "list/first: should return first element")
+
+(set test_list_first_single (fn () :I
+    (set lst (qu (7)))
+    (int/eq (list/first (uq lst)) 7)))
+(ASSERT_TRUE (test_list_first_single) "list/first: should work with single element")
+
+(set test_list_first_empty (fn () :I
+    (try
+        (do
+            (list/first (uq (qu ())))
+            0)
+        1)))
+(ASSERT_TRUE (test_list_first_empty) "list/first: should error on empty list")
+
+(putln "list/first passed")
+
+(set test_list_last_basic (fn () :I
+    (set lst (qu (1 2 3 42)))
+    (int/eq (list/last (uq lst)) 42)))
+(ASSERT_TRUE (test_list_last_basic) "list/last: should return last element")
+
+(set test_list_last_single (fn () :I
+    (set lst (qu (7)))
+    (int/eq (list/last (uq lst)) 7)))
+(ASSERT_TRUE (test_list_last_single) "list/last: should work with single element")
+
+(set test_list_last_empty (fn () :I
+    (try
+        (do
+            (list/last (uq (qu ())))
+            0)
+        1)))
+(ASSERT_TRUE (test_list_last_empty) "list/last: should error on empty list")
+
+(putln "list/last passed")
+
+(set test_list_push_basic (fn () :I
+    (set lst (list/new 0 0))
+    (set lst (list/push lst 42))
+    (int/eq (list/len lst) 1)))
+(ASSERT_TRUE (test_list_push_basic) "list/push: should append element")
+
+(set test_list_push_multiple (fn () :I
+    (set lst (list/new 0 0))
+    (set lst (list/push lst 1))
+    (set lst (list/push lst 2))
+    (set lst (list/push lst 3))
+    (if (int/eq (list/len lst) 3)
+        (if (int/eq (list/get lst 2) 3)
+            1
+            0)
+        0)))
+(ASSERT_TRUE (test_list_push_multiple) "list/push: should append multiple elements")
+
+(putln "list/push passed")
+
+(set test_list_pop_basic (fn () :I
+    (set lst (qu (1 2 3)))
+    (int/eq (list/pop (uq lst)) 3)))
+(ASSERT_TRUE (test_list_pop_basic) "list/pop: should return last element")
+
+(set test_list_pop_empty (fn () :I
+    (try
+        (do
+            (list/pop (uq (qu ())))
+            0)
+        1)))
+(ASSERT_TRUE (test_list_pop_empty) "list/pop: should error on empty list")
+
+(putln "list/pop passed")
+
+(set test_list_fill_basic (fn () :I
+    (set lst (list/new 3 0))
+    (set lst (list/fill lst 99))
+    (if (int/eq (list/get lst 0) 99)
+        (if (int/eq (list/get lst 1) 99)
+            (if (int/eq (list/get lst 2) 99)
+                1
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_list_fill_basic) "list/fill: should fill all positions")
+
+(set test_list_fill_empty (fn () :I
+    (set lst (list/new 0 0))
+    (set lst (list/fill lst 42))
+    (int/eq (list/len lst) 0)))
+(ASSERT_TRUE (test_list_fill_empty) "list/fill: empty list should remain empty")
+
+(putln "list/fill passed")
+
+(set test_list_reverse_even (fn () :I
+    (set lst (qu (1 2 3 4)))
+    (set lst (list/reverse (uq lst)))
+    (if (int/eq (list/get lst 0) 4)
+        (if (int/eq (list/get lst 3) 1)
+            1
+            0)
+        0)))
+(ASSERT_TRUE (test_list_reverse_even) "list/reverse: should reverse even-length list")
+
+(set test_list_reverse_odd (fn () :I
+    (set lst (qu (1 2 3)))
+    (set lst (list/reverse (uq lst)))
+    (if (int/eq (list/get lst 0) 3)
+        (if (int/eq (list/get lst 2) 1)
+            1
+            0)
+        0)))
+(ASSERT_TRUE (test_list_reverse_odd) "list/reverse: should reverse odd-length list")
+
+(set test_list_reverse_single (fn () :I
+    (set lst (qu (42)))
+    (set lst (list/reverse (uq lst)))
+    (int/eq (list/get lst 0) 42)))
+(ASSERT_TRUE (test_list_reverse_single) "list/reverse: single element should remain")
+
+(set test_list_reverse_empty (fn () :I
+    (set lst (list/reverse (uq (qu ()))))
+    (int/eq (list/len lst) 0)))
+(ASSERT_TRUE (test_list_reverse_empty) "list/reverse: empty list should remain empty")
+
+(putln "list/reverse passed")
+
+(set test_list_contains_true (fn () :I
+    (set lst (qu (10 20 30)))
+    (list/contains (uq lst) 20)))
+(ASSERT_TRUE (test_list_contains_true) "list/contains: should find element")
+
+(set test_list_contains_false (fn () :I
+    (set lst (qu (10 20 30)))
+    (int/eq (list/contains (uq lst) 99) 0)))
+(ASSERT_TRUE (test_list_contains_false) "list/contains: should return 0 if not found")
+
+(set test_list_contains_string (fn () :I
+    (set lst (qu ("a" "b" "c")))
+    (list/contains (uq lst) "b")))
+(ASSERT_TRUE (test_list_contains_string) "list/contains: should work with strings")
+
+(set test_list_contains_empty (fn () :I
+    (int/eq (list/contains (uq (qu ())) 42) 0)))
+(ASSERT_TRUE (test_list_contains_empty) "list/contains: empty list should return 0")
+
+(putln "list/contains passed")
+
+(set test_list_index_found (fn () :I
+    (set lst (qu (10 20 30)))
+    (int/eq (list/index (uq lst) 30) 2)))
+(ASSERT_TRUE (test_list_index_found) "list/index: should return correct index")
+
+(set test_list_index_not_found (fn () :I
+    (set lst (qu (10 20 30)))
+    (int/eq (list/index (uq lst) 99) -1)))
+(ASSERT_TRUE (test_list_index_not_found) "list/index: should return -1 if not found")
+
+(set test_list_index_first_occurrence (fn () :I
+    (set lst (qu (1 2 3 2 4)))
+    (int/eq (list/index (uq lst) 2) 1)))
+(ASSERT_TRUE (test_list_index_first_occurrence) "list/index: should return first occurrence")
+
+(putln "list/index passed")
+
+(set test_list_subset_inclusive (fn () :I
+    (set lst (qu (0 1 2 3 4)))
+    (set sub (list/subset (uq lst) 1 3))
+    (if (int/eq (list/len sub) 3)
+        (if (int/eq (list/get sub 0) 1)
+            (if (int/eq (list/get sub 2) 3)
+                1
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_list_subset_inclusive) "list/subset: should extract inclusive range")
+
+(set test_list_subset_single (fn () :I
+    (set lst (qu (0 1 2)))
+    (set sub (list/subset (uq lst) 1 1))
+    (if (int/eq (list/len sub) 1)
+        (int/eq (list/get sub 0) 1)
+        0)))
+(ASSERT_TRUE (test_list_subset_single) "list/subset: single element range should work")
+
+(set test_list_subset_out_of_bounds (fn () :I
+    (try
+        (do
+            (set lst (qu (1 2 3)))
+            (list/subset (uq lst) 0 10)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_subset_out_of_bounds) "list/subset: should error on out of bounds")
+
+(set test_list_subset_invalid_range (fn () :I
+    (try
+        (do
+            (set lst (qu (1 2 3 4 5)))
+            (list/subset (uq lst) 3 1)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_subset_invalid_range) "list/subset: should error on invalid range")
+
+(putln "list/subset passed")
+
+(set test_list_slice_exclusive (fn () :I
+    (set lst (qu (0 1 2 3 4)))
+    (set slc (list/slice (uq lst) 1 3))
+    (if (int/eq (list/len slc) 2)
+        (if (int/eq (list/get slc 0) 1)
+            (if (int/eq (list/get slc 1) 2)
+                1
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_list_slice_exclusive) "list/slice: should extract exclusive range")
+
+(set test_list_slice_bounds_clamping (fn () :I
+    (set lst (qu (1 2 3)))
+    (set slc (list/slice (uq lst) 0 100))
+    (int/eq (list/len slc) 3)))
+(ASSERT_TRUE (test_list_slice_bounds_clamping) "list/slice: should clamp bounds")
+
+(set test_list_slice_negative_start (fn () :I
+    (set lst (qu (1 2 3)))
+    (set slc (list/slice (uq lst) -5 2))
+    (int/eq (list/len slc) 2)))
+(ASSERT_TRUE (test_list_slice_negative_start) "list/slice: negative start should become 0")
+
+(set test_list_slice_empty (fn () :I
+    (set lst (qu (1 2 3)))
+    (set slc (list/slice (uq lst) 1 1))
+    (int/eq (list/len slc) 0)))
+(ASSERT_TRUE (test_list_slice_empty) "list/slice: same start and end should return empty")
+
+(putln "list/slice passed")
+
+(set test_list_concat_empty (fn () :I
+    (int/eq (list/len (list/concat)) 0)))
+(ASSERT_TRUE (test_list_concat_empty) "list/concat: no arguments should return empty list")
+
+(set test_list_concat_single (fn () :I
+    (set lst (qu (1 2 3)))
+    (set result (list/concat (uq lst)))
+    (int/eq (list/len result) 3)))
+(ASSERT_TRUE (test_list_concat_single) "list/concat: single list should work")
+
+(set test_list_concat_multiple (fn () :I
+    (set a (qu (1 2)))
+    (set b (qu (3 4)))
+    (set c (qu (5)))
+    (set result (list/concat (uq a) (uq b) (uq c)))
+    (if (int/eq (list/len result) 5)
+        (if (int/eq (list/get result 0) 1)
+            (if (int/eq (list/get result 4) 5)
+                1
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_list_concat_multiple) "list/concat: should concatenate multiple lists")
+
+(set test_list_concat_type_error (fn () :I
+    (try
+        (do
+            (set lst (qu (1 2)))
+            (list/concat (uq lst) 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_concat_type_error) "list/concat: should reject non-list arguments")
+
+(putln "list/concat passed")
+
+(set test_list_join_basic (fn () :I
+    (set lst (qu ("hello" "world")))
+    (str/eq (list/join (uq lst) " ") "hello world")))
+(ASSERT_TRUE (test_list_join_basic) "list/join: should join strings with separator")
+
+(set test_list_join_numbers (fn () :I
+    (set lst (qu (1 2 3)))
+    (str/eq (list/join (uq lst) ",") "1,2,3")))
+(ASSERT_TRUE (test_list_join_numbers) "list/join: should convert numbers to strings")
+
+(set test_list_join_empty (fn () :I
+    (str/eq (list/join (uq (qu ())) ",") "")))
+(ASSERT_TRUE (test_list_join_empty) "list/join: empty list should return empty string")
+
+(set test_list_join_single (fn () :I
+    (set lst (qu ("hello")))
+    (str/eq (list/join (uq lst) ",") "hello")))
+(ASSERT_TRUE (test_list_join_single) "list/join: single element should not add separator")
+
+(putln "list/join passed")
+
+(set test_list_iter_full (fn () :I
+    (set lst (qu (1 2 3)))
+    (set count 0)
+    (set result (list/iter (uq lst) (fn (el :*) :I
+        (do
+            (set count (int/add count 1))
+            1))))
+    (if (int/eq result 1)
+        (int/eq count 3)
+        0)))
+(ASSERT_TRUE (test_list_iter_full) "list/iter: should iterate all elements")
+
+(set test_list_iter_early_stop (fn () :I
+    (set lst (qu (1 2 3 4 5)))
+    (set count 0)
+    (set result (list/iter (uq lst) (fn (el :I) :I
+        (do
+            (set count (int/add count 1))
+            (if (int/gt el 2) 0 1)))))
+    (if (int/eq result 0)
+        (int/eq count 3)
+        0)))
+(ASSERT_TRUE (test_list_iter_early_stop) "list/iter: should stop early when callback returns 0")
+
+(set test_list_iter_empty (fn () :I
+    (set result (list/iter (uq (qu ())) (fn (el :*) :I 1)))
+    (int/eq result 1)))
+(ASSERT_TRUE (test_list_iter_empty) "list/iter: empty list should return 1")
+
+(putln "list/iter passed")
+
+(set test_list_map_basic (fn () :I
+    (set lst (qu (1 2 3)))
+    (set doubled (list/map (uq lst) (fn (x :I) :I (int/mul x 2))))
+    (if (int/eq (list/get doubled 0) 2)
+        (if (int/eq (list/get doubled 1) 4)
+            (if (int/eq (list/get doubled 2) 6)
+                1
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_list_map_basic) "list/map: should transform elements")
+
+(set test_list_map_empty (fn () :I
+    (set result (list/map (uq (qu ())) (fn (x :I) :I (int/mul x 2))))
+    (int/eq (list/len result) 0)))
+(ASSERT_TRUE (test_list_map_empty) "list/map: empty list should return empty list")
+
+(putln "list/map passed")
+
+(set test_list_filter_basic (fn () :I
+    (set lst (qu (1 2 3 4 5 6)))
+    (set evens (list/filter (uq lst) (fn (x :I) :I
+        (int/eq (int/mod x 2) 0))))
+    (if (int/eq (list/len evens) 3)
+        (if (int/eq (list/get evens 0) 2)
+            (if (int/eq (list/get evens 2) 6)
+                1
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_list_filter_basic) "list/filter: should filter elements")
+
+(set test_list_filter_none (fn () :I
+    (set lst (qu (1 3 5)))
+    (set evens (list/filter (uq lst) (fn (x :I) :I
+        (int/eq (int/mod x 2) 0))))
+    (int/eq (list/len evens) 0)))
+(ASSERT_TRUE (test_list_filter_none) "list/filter: no matches should return empty list")
+
+(set test_list_filter_all (fn () :I
+    (set lst (qu (2 4 6)))
+    (set evens (list/filter (uq lst) (fn (x :I) :I
+        (int/eq (int/mod x 2) 0))))
+    (int/eq (list/len evens) 3)))
+(ASSERT_TRUE (test_list_filter_all) "list/filter: all matches should return full list")
+
+(putln "list/filter passed")
+
+(set test_list_reduce_sum (fn () :I
+    (set lst (qu (1 2 3 4 5)))
+    (set sum (list/reduce (uq lst) 0 (fn (acc :I el :I) :I
+        (int/add acc el))))
+    (int/eq sum 15)))
+(ASSERT_TRUE (test_list_reduce_sum) "list/reduce: should sum elements")
+
+(set test_list_reduce_product (fn () :I
+    (set lst (qu (2 3 4)))
+    (set product (list/reduce (uq lst) 1 (fn (acc :I el :I) :I
+        (int/mul acc el))))
+    (int/eq product 24)))
+(ASSERT_TRUE (test_list_reduce_product) "list/reduce: should compute product")
+
+(set test_list_reduce_empty (fn () :I
+    (set result (list/reduce (uq (qu ())) 42 (fn (acc :I el :I) :I
+        (int/add acc el))))
+    (int/eq result 42)))
+(ASSERT_TRUE (test_list_reduce_empty) "list/reduce: empty list should return initial value")
+
+(putln "list/reduce passed")
+
+(set test_complex_pipeline (fn () :I
+    (set nums (qu (1 2 3 4 5 6 7 8 9 10)))
+    (set result (list/reduce
+        (list/map
+            (list/filter (uq nums) (fn (x :I) :I (int/gt x 5)))
+            (fn (x :I) :I (int/mul x 2)))
+        0
+        (fn (acc :I el :I) :I (int/add acc el))))
+    (int/eq result 80)))
+(ASSERT_TRUE (test_complex_pipeline) "complex: filter-map-reduce pipeline should work")
+
+(set test_list_building (fn () :I
+    (set lst (list/new 0 0))
+    (set lst (list/push lst 1))
+    (set lst (list/push lst 2))
+    (set lst (list/push lst 3))
+    (set reversed (list/reverse lst))
+    (if (int/eq (list/first reversed) 3)
+        (if (int/eq (list/last reversed) 1)
+            1
+            0)
+        0)))
+(ASSERT_TRUE (test_list_building) "complex: list building and manipulation should work")
+
+(set test_list_slice_deep_copy (fn () :I
+    (set original (qu (1 2 3 4 5)))
+    (set sliced (list/slice (uq original) 1 4))
+    (set sliced (list/set sliced 0 99))
+    (if (int/eq (list/get (uq original) 1) 2)
+        1
+        0)))
+(ASSERT_TRUE (test_list_slice_deep_copy) "complex: list/slice should deep copy, not share references")
+
+(set test_list_concat_deep_copy (fn () :I
+    (set a (qu (1 2)))
+    (set b (qu (3 4)))
+    (set combined (list/concat (uq a) (uq b)))
+    (set combined (list/set combined 0 99))
+    (if (int/eq (list/get (uq a) 0) 1)
+        1
+        0)))
+(ASSERT_TRUE (test_list_concat_deep_copy) "complex: list/concat should deep copy, not share references")
+
+(set test_list_map_deep_copy (fn () :I
+    (set original (qu (1 2 3)))
+    (set mapped (list/map (uq original) (fn (x :I) :I (int/mul x 2))))
+    (set mapped (list/set mapped 0 99))
+    (if (int/eq (list/get (uq original) 0) 1)
+        1
+        0)))
+(ASSERT_TRUE (test_list_map_deep_copy) "complex: list/map should deep copy, not share references")
+
+(set test_list_filter_deep_copy (fn () :I
+    (set original (qu (1 2 3 4)))
+    (set filtered (list/filter (uq original) (fn (x :I) :I (int/gt x 2))))
+    (set filtered (list/set filtered 0 99))
+    (if (int/eq (list/get (uq original) 2) 3)
+        1
+        0)))
+(ASSERT_TRUE (test_list_filter_deep_copy) "complex: list/filter should deep copy, not share references")
+
+(putln "Complex list operations passed")
+
+(set test_list_new_type_error_length (fn () :I
+    (try
+        (do
+            (list/new "bad" 0)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_new_type_error_length) "list/new: should reject non-integer length")
+
+(set test_list_get_type_error_list (fn () :I
+    (try
+        (do
+            (list/get 42 0)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_get_type_error_list) "list/get: should reject non-list")
+
+(set test_list_get_type_error_index (fn () :I
+    (try
+        (do
+            (set lst (qu (1 2 3)))
+            (list/get (uq lst) "bad")
+            0)
+        1)))
+(ASSERT_TRUE (test_list_get_type_error_index) "list/get: should reject non-integer index")
+
+(set test_list_set_type_error_list (fn () :I
+    (try
+        (do
+            (list/set "bad" 0 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_set_type_error_list) "list/set: should reject non-list")
+
+(set test_list_set_type_error_index (fn () :I
+    (try
+        (do
+            (set lst (list/new 3 0))
+            (list/set lst "bad" 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_set_type_error_index) "list/set: should reject non-integer index")
+
+(set test_list_push_type_error (fn () :I
+    (try
+        (do
+            (list/push "not a list" 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_push_type_error) "list/push: should reject non-list")
+
+(set test_list_pop_type_error (fn () :I
+    (try
+        (do
+            (list/pop "not a list")
+            0)
+        1)))
+(ASSERT_TRUE (test_list_pop_type_error) "list/pop: should reject non-list")
+
+(set test_list_fill_type_error (fn () :I
+    (try
+        (do
+            (list/fill 42 99)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_fill_type_error) "list/fill: should reject non-list")
+
+(set test_list_reverse_type_error (fn () :I
+    (try
+        (do
+            (list/reverse "not a list")
+            0)
+        1)))
+(ASSERT_TRUE (test_list_reverse_type_error) "list/reverse: should reject non-list")
+
+(set test_list_contains_type_error (fn () :I
+    (try
+        (do
+            (list/contains 42 99)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_contains_type_error) "list/contains: should reject non-list")
+
+(set test_list_index_type_error (fn () :I
+    (try
+        (do
+            (list/index "not a list" 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_index_type_error) "list/index: should reject non-list")
+
+(set test_list_first_type_error (fn () :I
+    (try
+        (do
+            (list/first 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_first_type_error) "list/first: should reject non-list")
+
+(set test_list_last_type_error (fn () :I
+    (try
+        (do
+            (list/last "not a list")
+            0)
+        1)))
+(ASSERT_TRUE (test_list_last_type_error) "list/last: should reject non-list")
+
+(set test_list_subset_type_error_list (fn () :I
+    (try
+        (do
+            (list/subset 42 0 2)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_subset_type_error_list) "list/subset: should reject non-list")
+
+(set test_list_subset_type_error_start (fn () :I
+    (try
+        (do
+            (set lst (qu (1 2 3)))
+            (list/subset (uq lst) "bad" 2)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_subset_type_error_start) "list/subset: should reject non-integer start")
+
+(set test_list_subset_type_error_end (fn () :I
+    (try
+        (do
+            (set lst (qu (1 2 3)))
+            (list/subset (uq lst) 0 "bad")
+            0)
+        1)))
+(ASSERT_TRUE (test_list_subset_type_error_end) "list/subset: should reject non-integer end")
+
+(set test_list_slice_type_error_list (fn () :I
+    (try
+        (do
+            (list/slice "not a list" 0 2)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_slice_type_error_list) "list/slice: should reject non-list")
+
+(set test_list_join_type_error_list (fn () :I
+    (try
+        (do
+            (list/join 42 ",")
+            0)
+        1)))
+(ASSERT_TRUE (test_list_join_type_error_list) "list/join: should reject non-list")
+
+(set test_list_join_type_error_sep (fn () :I
+    (try
+        (do
+            (set lst (qu (1 2 3)))
+            (list/join (uq lst) 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_list_join_type_error_sep) "list/join: should reject non-string separator")
+
+(set test_list_concat_mixed_types (fn () :I
+    (try
+        (do
+            (set lst (qu (1 2)))
+            (list/concat (uq lst) "bad" (uq lst))
+            0)
+        1)))
+(ASSERT_TRUE (test_list_concat_mixed_types) "list/concat: should reject mixed types")
+
+(set test_list_iter_type_error_list (fn () :I
+    (try
+        (do
+            (list/iter 42 (fn (x :*) :I 1))
+            0)
+        1)))
+(ASSERT_TRUE (test_list_iter_type_error_list) "list/iter: should reject non-list")
+
+(set test_list_map_type_error_list (fn () :I
+    (try
+        (do
+            (list/map "not a list" (fn (x :*) :* x))
+            0)
+        1)))
+(ASSERT_TRUE (test_list_map_type_error_list) "list/map: should reject non-list")
+
+(set test_list_filter_type_error_list (fn () :I
+    (try
+        (do
+            (list/filter 42 (fn (x :*) :I 1))
+            0)
+        1)))
+(ASSERT_TRUE (test_list_filter_type_error_list) "list/filter: should reject non-list")
+
+(set test_list_reduce_type_error_list (fn () :I
+    (try
+        (do
+            (list/reduce "not a list" 0 (fn (acc :* el :*) :* acc))
+            0)
+        1)))
+(ASSERT_TRUE (test_list_reduce_type_error_list) "list/reduce: should reject non-list")
+
+(putln "Negative type checking tests passed")
+
+(putln "")
+(putln "=================================")
+(putln "ALL LIST TESTS PASSED")
+(putln "=================================")
+(putln "")
+(putln "Test summary:")
+(putln "  - list/new (5 positive + 1 negative)")
+(putln "  - list/len (2 positive + 1 negative)")
+(putln "  - list/clear (1 positive + 1 negative)")
+(putln "  - list/empty (2 positive + 1 negative)")
+(putln "  - list/get (2 positive + 2 negative + 1 type)")
+(putln "  - list/set (1 positive + 2 negative + 2 type)")
+(putln "  - list/first (2 positive + 1 negative + 1 type)")
+(putln "  - list/last (2 positive + 1 negative + 1 type)")
+(putln "  - list/push (2 positive + 1 negative)")
+(putln "  - list/pop (1 positive + 1 negative + 1 type)")
+(putln "  - list/fill (2 positive + 1 negative)")
+(putln "  - list/reverse (4 positive + 1 negative)")
+(putln "  - list/contains (4 positive + 1 negative)")
+(putln "  - list/index (3 positive + 1 negative)")
+(putln "  - list/subset (2 positive + 2 negative + 3 type)")
+(putln "  - list/slice (4 positive + 1 negative)")
+(putln "  - list/concat (3 positive + 2 negative)")
+(putln "  - list/join (4 positive + 2 negative)")
+(putln "  - list/iter (3 positive + 1 negative)")
+(putln "  - list/map (2 positive + 1 negative)")
+(putln "  - list/filter (3 positive + 1 negative)")
+(putln "  - list/reduce (3 positive + 1 negative)")
+(putln "  - Complex operations (2 tests)")
+(putln "")
+(putln "Total: 61 positive + 34 negative = 95 test assertions")
+(putln "")

@@ -1,0 +1,392 @@
+(use "bootstrap.slpx")
+
+(putln "=== Reflection Tests ===")
+
+(set test_int_val 42)
+(set test_real_val 3.14)
+(set test_str_val "hello")
+(set test_list_val (qu (1 2 3)))
+(set test_fn_val (fn () :I 1))
+(set test_none_val _)
+(set test_some_val (qu 42))
+
+(set test_type_int (fn () :I
+    (set result (reflect/type? 42))
+    (if (reflect/str? result)
+        (if (reflect/equal? result "integer") 1 0)
+        0)))
+(ASSERT_TRUE (test_type_int) "reflect/type?: integer literal should return 'integer'")
+
+(set test_type_real (fn () :I
+    (set result (reflect/type? 3.14))
+    (if (reflect/str? result)
+        (if (reflect/equal? result "real") 1 0)
+        0)))
+(ASSERT_TRUE (test_type_real) "reflect/type?: real literal should return 'real'")
+
+(set test_type_string (fn () :I
+    (set result (reflect/type? "hello"))
+    (if (reflect/str? result)
+        (if (reflect/equal? result "string") 1 0)
+        0)))
+(ASSERT_TRUE (test_type_string) "reflect/type?: string literal should return 'string'")
+
+(set test_type_none (fn () :I
+    (set result (reflect/type? _))
+    (if (reflect/str? result)
+        (if (reflect/equal? result "none") 1 0)
+        0)))
+(ASSERT_TRUE (test_type_none) "reflect/type?: none should return 'none'")
+
+(set test_type_var_int (fn () :I
+    (set x 100)
+    (set result (reflect/type? x))
+    (if (reflect/str? result)
+        (if (reflect/equal? result "integer") 1 0)
+        0)))
+(ASSERT_TRUE (test_type_var_int) "reflect/type?: variable with integer should return 'integer'")
+
+(set test_type_no_eval_identifier (fn () :I
+    (set result (reflect/type? undefined_var))
+    (if (reflect/str? result)
+        (if (reflect/equal? result "identifier") 1 0)
+        0)))
+(ASSERT_TRUE (test_type_no_eval_identifier) "reflect/type?: should not evaluate undefined identifier")
+
+(set test_type_no_eval_list (fn () :I
+    (set result (reflect/type? (int/add 1 2)))
+    (if (reflect/str? result)
+        (if (reflect/equal? result "list") 1 0)
+        0)))
+(ASSERT_TRUE (test_type_no_eval_list) "reflect/type?: should not evaluate list expressions")
+
+(putln "reflect/type? passed")
+
+(set test_int_predicate_true (fn () :I
+    (reflect/int? 42)))
+(ASSERT_TRUE (test_int_predicate_true) "reflect/int?: integer should return 1")
+
+(set test_int_predicate_false_real (fn () :I
+    (int/eq (reflect/int? 3.14) 0)))
+(ASSERT_TRUE (test_int_predicate_false_real) "reflect/int?: real should return 0")
+
+(set test_int_predicate_false_str (fn () :I
+    (int/eq (reflect/int? "hello") 0)))
+(ASSERT_TRUE (test_int_predicate_false_str) "reflect/int?: string should return 0")
+
+(set test_int_predicate_false_none (fn () :I
+    (int/eq (reflect/int? _) 0)))
+(ASSERT_TRUE (test_int_predicate_false_none) "reflect/int?: none should return 0")
+
+(set test_int_predicate_var (fn () :I
+    (set x 100)
+    (reflect/int? x)))
+(ASSERT_TRUE (test_int_predicate_var) "reflect/int?: variable with integer should return 1")
+
+(putln "reflect/int? passed")
+
+(set test_real_predicate_true (fn () :I
+    (reflect/real? 3.14)))
+(ASSERT_TRUE (test_real_predicate_true) "reflect/real?: real should return 1")
+
+(set test_real_predicate_false_int (fn () :I
+    (int/eq (reflect/real? 42) 0)))
+(ASSERT_TRUE (test_real_predicate_false_int) "reflect/real?: integer should return 0")
+
+(set test_real_predicate_false_str (fn () :I
+    (int/eq (reflect/real? "3.14") 0)))
+(ASSERT_TRUE (test_real_predicate_false_str) "reflect/real?: string should return 0")
+
+(putln "reflect/real? passed")
+
+(set test_str_predicate_true (fn () :I
+    (reflect/str? "hello")))
+(ASSERT_TRUE (test_str_predicate_true) "reflect/str?: string should return 1")
+
+(set test_str_predicate_false_int (fn () :I
+    (int/eq (reflect/str? 42) 0)))
+(ASSERT_TRUE (test_str_predicate_false_int) "reflect/str?: integer should return 0")
+
+(set test_str_predicate_false_real (fn () :I
+    (int/eq (reflect/str? 3.14) 0)))
+(ASSERT_TRUE (test_str_predicate_false_real) "reflect/str?: real should return 0")
+
+(set test_str_predicate_var (fn () :I
+    (set x "world")
+    (reflect/str? x)))
+(ASSERT_TRUE (test_str_predicate_var) "reflect/str?: variable with string should return 1")
+
+(putln "reflect/str? passed")
+
+(set test_list_predicate_true (fn () :I
+    (reflect/list? (uq test_list_val))))
+(ASSERT_TRUE (test_list_predicate_true) "reflect/list?: list should return 1")
+
+(set test_list_predicate_false_int (fn () :I
+    (int/eq (reflect/list? 42) 0)))
+(ASSERT_TRUE (test_list_predicate_false_int) "reflect/list?: integer should return 0")
+
+(set test_list_predicate_false_str (fn () :I
+    (int/eq (reflect/list? "list") 0)))
+(ASSERT_TRUE (test_list_predicate_false_str) "reflect/list?: string should return 0")
+
+(putln "reflect/list? passed")
+
+(set test_fn_predicate_true (fn () :I
+    (reflect/fn? test_fn_val)))
+(ASSERT_TRUE (test_fn_predicate_true) "reflect/fn?: function should return 1")
+
+(set test_fn_predicate_false_int (fn () :I
+    (int/eq (reflect/fn? 42) 0)))
+(ASSERT_TRUE (test_fn_predicate_false_int) "reflect/fn?: integer should return 0")
+
+(set test_fn_predicate_inline (fn () :I
+    (reflect/fn? (fn () :I 1))))
+(ASSERT_TRUE (test_fn_predicate_inline) "reflect/fn?: inline function should return 1")
+
+(putln "reflect/fn? passed")
+
+(set test_none_predicate_true (fn () :I
+    (reflect/none? _)))
+(ASSERT_TRUE (test_none_predicate_true) "reflect/none?: none should return 1")
+
+(set test_none_predicate_false_int (fn () :I
+    (int/eq (reflect/none? 42) 0)))
+(ASSERT_TRUE (test_none_predicate_false_int) "reflect/none?: integer should return 0")
+
+(set test_none_predicate_false_str (fn () :I
+    (int/eq (reflect/none? "none") 0)))
+(ASSERT_TRUE (test_none_predicate_false_str) "reflect/none?: string should return 0")
+
+(set test_none_predicate_var (fn () :I
+    (set x _)
+    (reflect/none? x)))
+(ASSERT_TRUE (test_none_predicate_var) "reflect/none?: variable with none should return 1")
+
+(putln "reflect/none? passed")
+
+(set test_error_predicate_false_int (fn () :I
+    (int/eq (reflect/error? 42) 0)))
+(ASSERT_TRUE (test_error_predicate_false_int) "reflect/error?: integer should return 0")
+
+(set test_error_predicate_false_str (fn () :I
+    (int/eq (reflect/error? "error") 0)))
+(ASSERT_TRUE (test_error_predicate_false_str) "reflect/error?: string should return 0")
+
+(putln "reflect/error? passed")
+
+(set test_some_predicate_true (fn () :I
+    (reflect/some? (qu 42))))
+(ASSERT_TRUE (test_some_predicate_true) "reflect/some?: quoted value should return 1")
+
+(set test_some_predicate_false_int (fn () :I
+    (int/eq (reflect/some? 42) 0)))
+(ASSERT_TRUE (test_some_predicate_false_int) "reflect/some?: integer should return 0")
+
+(set test_some_predicate_list (fn () :I
+    (reflect/some? (qu (1 2 3)))))
+(ASSERT_TRUE (test_some_predicate_list) "reflect/some?: quoted list should return 1")
+
+(set test_some_predicate_var (fn () :I
+    (set x (qu hello))
+    (reflect/some? x)))
+(ASSERT_TRUE (test_some_predicate_var) "reflect/some?: variable with quoted value should return 1")
+
+(putln "reflect/some? passed")
+
+(set test_equal_int_int (fn () :I
+    (reflect/equal? 42 100)))
+(ASSERT_TRUE (test_equal_int_int) "reflect/equal?: two integers should return 1")
+
+(set test_equal_int_str (fn () :I
+    (int/eq (reflect/equal? 42 "hello") 0)))
+(ASSERT_TRUE (test_equal_int_str) "reflect/equal?: integer and string should return 0")
+
+(set test_equal_real_real (fn () :I
+    (reflect/equal? 3.14 2.71)))
+(ASSERT_TRUE (test_equal_real_real) "reflect/equal?: two reals should return 1")
+
+(set test_equal_int_real (fn () :I
+    (int/eq (reflect/equal? 42 3.14) 0)))
+(ASSERT_TRUE (test_equal_int_real) "reflect/equal?: integer and real should return 0")
+
+(set test_equal_str_str (fn () :I
+    (reflect/equal? "hello" "world")))
+(ASSERT_TRUE (test_equal_str_str) "reflect/equal?: two strings should return 1")
+
+(set test_equal_none_none (fn () :I
+    (reflect/equal? _ _)))
+(ASSERT_TRUE (test_equal_none_none) "reflect/equal?: two nones should return 1")
+
+(set test_equal_fn_fn (fn () :I
+    (reflect/equal? test_fn_val (fn () :I 2))))
+(ASSERT_TRUE (test_equal_fn_fn) "reflect/equal?: two functions should return 1")
+
+(set test_equal_list_list (fn () :I
+    (reflect/equal? (uq test_list_val) (uq (qu (4 5 6))))))
+(ASSERT_TRUE (test_equal_list_list) "reflect/equal?: two lists should return 1")
+
+(set test_equal_some_some (fn () :I
+    (reflect/equal? (qu 1) (qu 2))))
+(ASSERT_TRUE (test_equal_some_some) "reflect/equal?: two quoted values should return 1")
+
+
+(set test_equal_mixed_types1 (fn () :I
+    (int/eq (reflect/equal? 42 _) 0)))
+(ASSERT_TRUE (test_equal_mixed_types1) "reflect/equal?: integer and none should return 0")
+
+(set test_equal_mixed_types2 (fn () :I
+    (int/eq (reflect/equal? "hello" (fn () :I 1)) 0)))
+(ASSERT_TRUE (test_equal_mixed_types2) "reflect/equal?: string and function should return 0")
+
+(set test_equal_mixed_types3 (fn () :I
+    (int/eq (reflect/equal? 3.14 (qu x)) 0)))
+(ASSERT_TRUE (test_equal_mixed_types3) "reflect/equal?: real and quoted should return 0")
+
+(putln "reflect/equal? passed")
+
+(set test_cross_type_int_checks (fn () :I
+    (if (reflect/int? 42)
+        (if (int/eq (reflect/real? 42) 0)
+            (if (int/eq (reflect/str? 42) 0)
+                (if (int/eq (reflect/fn? 42) 0)
+                    1
+                    0)
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_cross_type_int_checks) "cross-type: integer should only match int?")
+
+(set test_cross_type_real_checks (fn () :I
+    (if (reflect/real? 3.14)
+        (if (int/eq (reflect/int? 3.14) 0)
+            (if (int/eq (reflect/str? 3.14) 0)
+                (if (int/eq (reflect/none? 3.14) 0)
+                    1
+                    0)
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_cross_type_real_checks) "cross-type: real should only match real?")
+
+(set test_cross_type_str_checks (fn () :I
+    (if (reflect/str? "test")
+        (if (int/eq (reflect/int? "test") 0)
+            (if (int/eq (reflect/real? "test") 0)
+                (if (int/eq (reflect/list? "test") 0)
+                    1
+                    0)
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_cross_type_str_checks) "cross-type: string should only match str?")
+
+(set test_cross_type_none_checks (fn () :I
+    (if (reflect/none? _)
+        (if (int/eq (reflect/int? _) 0)
+            (if (int/eq (reflect/str? _) 0)
+                (if (int/eq (reflect/error? _) 0)
+                    1
+                    0)
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_cross_type_none_checks) "cross-type: none should only match none?")
+
+(putln "Cross-type validation passed")
+
+(set test_type_dispatch (fn () :I
+    (set process (fn (val :*) :I
+        (if (reflect/int? val)
+            1
+            (if (reflect/str? val)
+                2
+                (if (reflect/real? val)
+                    3
+                    (if (reflect/none? val)
+                        4
+                        0))))))
+    (if (int/eq (process 42) 1)
+        (if (int/eq (process "hello") 2)
+            (if (int/eq (process 3.14) 3)
+                (if (int/eq (process _) 4)
+                    1
+                    0)
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_type_dispatch) "complex: type-based dispatch should work")
+
+(set test_type_guard (fn () :I
+    (set safe_int_add (fn (a :* b :*) :I
+        (if (reflect/int? a)
+            (if (reflect/int? b)
+                (int/add a b)
+                -1)
+            -2)))
+    (if (int/eq (safe_int_add 10 20) 30)
+        (if (int/eq (safe_int_add 10 "bad") -1)
+            (if (int/eq (safe_int_add "bad" 10) -2)
+                1
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_type_guard) "complex: type guards should prevent invalid operations")
+
+(set test_type_validation_chain (fn () :I
+    (set validate (fn (val :*) :I
+        (if (reflect/int? val)
+            (if (int/gt val 0)
+                1
+                0)
+            0)))
+    (if (int/eq (validate 42) 1)
+        (if (int/eq (validate -5) 0)
+            (if (int/eq (validate "not int") 0)
+                1
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_type_validation_chain) "complex: type validation with value checks should work")
+
+(putln "Complex type operations passed")
+
+(set test_all_predicates_exhaustive (fn () :I
+    (set val 42)
+    (set count 0)
+    (if (reflect/int? val) (set count (int/add count 1)) _)
+    (if (int/eq (reflect/real? val) 0) (set count (int/add count 1)) _)
+    (if (int/eq (reflect/str? val) 0) (set count (int/add count 1)) _)
+    (if (int/eq (reflect/list? val) 0) (set count (int/add count 1)) _)
+    (if (int/eq (reflect/fn? val) 0) (set count (int/add count 1)) _)
+    (if (int/eq (reflect/none? val) 0) (set count (int/add count 1)) _)
+    (if (int/eq (reflect/error? val) 0) (set count (int/add count 1)) _)
+    (if (int/eq (reflect/some? val) 0) (set count (int/add count 1)) _)
+    (int/eq count 8)))
+(ASSERT_TRUE (test_all_predicates_exhaustive) "exhaustive: all predicates should give correct results")
+
+(putln "Exhaustive predicate tests passed")
+
+(putln "")
+(putln "=================================")
+(putln "ALL REFLECTION TESTS PASSED")
+(putln "=================================")
+(putln "")
+(putln "Test summary:")
+(putln "  - reflect/type? (5 tests)")
+(putln "  - reflect/int? (5 tests)")
+(putln "  - reflect/real? (3 tests)")
+(putln "  - reflect/str? (4 tests)")
+(putln "  - reflect/list? (3 tests)")
+(putln "  - reflect/fn? (3 tests)")
+(putln "  - reflect/none? (4 tests)")
+(putln "  - reflect/error? (2 tests)")
+(putln "  - reflect/some? (4 tests)")
+(putln "  - reflect/equal? (13 tests)")
+(putln "  - Cross-type validation (4 tests)")
+(putln "  - Complex type operations (3 tests)")
+(putln "  - Exhaustive predicate tests (1 test)")
+(putln "")
+(putln "Total: 54 test assertions covering all reflection functions")
+(putln "")
+

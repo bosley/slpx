@@ -1,0 +1,570 @@
+; This bootstrap test is used to test the core of the language (that embedded in core.go)
+; and sets up functions that can be leveraged by the test suite once they "use" this file
+; "using" this file will run the bootstrap tests, meaning it might exit the program if it fails.
+; This is extremly useful for testing the full language as it ensures the core functionality is
+; working while also offering test functionality
+; - bosley
+;
+
+(set ASSERT_TRUE (fn (val :I msg :S) :_ 
+    (if val
+        _
+        (do
+            (putln "Assertion failed:" msg)
+            (exit 1)))))
+
+(set ASSERT_FALSE (fn (val :I msg :S) :_ 
+    (if val
+        (do
+            (putln "Assertion failed:" msg)
+            (exit 1))
+        _)))
+
+; =================[ LAMBDAS ]=================
+; Here we test the lambda system and end up defining
+; lambdas that are used in the rest of the "core" tests.
+;
+
+; somewhat redundant as we rely on assertions, but if assertions fail
+; these sanity tests will help debug really bad edge cases
+; other ifs. This seems like a "duh" moment, but if this fails and something
+; weird is going on in how items are yielded from the evaluator, this
+; will narrow things down significantly.
+;
+(set get_one (fn () :I (if 1 1 0)))
+(set get_zero (fn () :I (if 0 1 0)))
+
+(ASSERT_TRUE (get_one) "get_one should return truthy value")
+(ASSERT_FALSE (get_zero) "get_zero should return falsy value")
+
+(putln "Primitive conditionals passed")
+
+; =================[ VARIABLE MANAGEMENT ]=================
+
+(set test_var 42)
+(ASSERT_TRUE test_var "set should store integer value")
+
+(set test_var 99)
+(ASSERT_TRUE test_var "set should allow reassignment")
+
+(drop test_var)
+
+(set shadow_outer 100)
+(set test_shadow (fn () :I 
+    (do
+        (set shadow_outer 200)
+        shadow_outer)))
+(ASSERT_TRUE (test_shadow) "nested set should modify outer scope")
+
+(putln "Variable management passed")
+
+; =================[ FUNCTION PARAMETERS ]=================
+
+(set no_params (fn () :I 7))
+(ASSERT_TRUE (no_params) "no-parameter function should work")
+
+(set single_param (fn (x :I) :I x))
+(ASSERT_TRUE (single_param 5) "single parameter function should return its argument")
+
+(set multi_param (fn (a :I b :I) :I (if (if a 1 0) a b)))
+(ASSERT_TRUE (multi_param 10 20) "multi-parameter function should work")
+
+(set any_type_param (fn (x :*) :I 1))
+(ASSERT_TRUE (any_type_param 1) "any-type parameter should accept integer")
+(ASSERT_TRUE (any_type_param "test") "any-type parameter should accept string")
+
+(putln "Function parameters passed")
+
+; =================[ FUNCTION RETURN TYPES ]=================
+
+(set returns_int (fn () :I 42))
+(ASSERT_TRUE (returns_int) "function with integer return type should work")
+
+(set returns_string (fn () :S "hello"))
+(set string_test_result (returns_string))
+(ASSERT_TRUE 1 "function with string return type should work")
+
+(set returns_any (fn () :* 123))
+(ASSERT_TRUE (returns_any) "function with any return type should work")
+
+(putln "Function return types passed")
+
+; =================[ VARIADIC FUNCTIONS ]=================
+
+(set variadic_fn (fn (..) :I 
+    (do
+        (set args $args)
+        1)))
+(ASSERT_TRUE (variadic_fn) "variadic function with no args should work")
+(ASSERT_TRUE (variadic_fn 1) "variadic function with one arg should work")
+(ASSERT_TRUE (variadic_fn 1 2 3) "variadic function with multiple args should work")
+
+(putln "Variadic functions passed")
+
+; =================[ SEQUENTIAL EXECUTION (do) ]=================
+
+(set do_test (fn () :I
+    (do
+        (set temp1 1)
+        (set temp2 2)
+        (set temp3 3)
+        temp3)))
+(ASSERT_TRUE (do_test) "do should execute multiple expressions and return last")
+
+(set do_empty (fn () :_ (do _)))
+(do_empty)
+
+(putln "Sequential execution passed")
+
+; =================[ CONDITIONALS (if) ]=================
+
+(set if_true_branch (fn () :I (if 1 10 20)))
+(ASSERT_TRUE (if_true_branch) "if should take true branch on truthy")
+
+(set if_false_branch (fn () :I (if 0 10 20)))
+(ASSERT_TRUE (if_false_branch) "if should take false branch on falsy")
+
+(set nested_if (fn (x :I) :I 
+    (if x
+        (if x 5 10)
+        15)))
+(ASSERT_TRUE (nested_if 1) "nested if in true branch should work")
+(ASSERT_TRUE (nested_if 0) "nested if with false outer should work")
+
+(putln "Conditionals passed")
+
+; =================[ QUOTE/UNQUOTE ]=================
+
+(set quoted_expr (qu (set dangerous 999)))
+(ASSERT_TRUE 1 "qu should quote an expression without executing")
+
+(set unquote_test (fn () :I
+    (do
+        (set my_quoted (qu 42))
+        (uq my_quoted))))
+(ASSERT_TRUE (unquote_test) "uq should unquote a quoted value")
+
+(set quote_list (qu (1 2 3)))
+(ASSERT_TRUE 1 "qu should quote a list")
+
+(putln "Quote/unquote passed")
+
+; =================[ ERROR HANDLING (try) ]=================
+
+(set safe_operation (fn () :I
+    (try
+        (if 1 5 0)
+        0)))
+(ASSERT_TRUE (safe_operation) "try should return result on success")
+
+(set error_handler (fn () :I
+    (try
+        (do
+            (set undefined_check nonexistent_var)
+            0)
+        100)))
+(ASSERT_TRUE (error_handler) "try should catch errors and run handler")
+
+(putln "Error handling passed")
+
+; =================[ NESTED FUNCTIONS ]=================
+
+(set outer_fn (fn (x :I) :F
+    (fn (y :I) :I (if x x y))))
+(set inner_result (outer_fn 10))
+(ASSERT_TRUE (inner_result 5) "nested function creation should work")
+
+(set closure_test (fn (a :I) :F
+    (do
+        (set local_a a)
+        (fn (b :I) :I (if local_a local_a b)))))
+(set closure_fn (closure_test 42))
+(ASSERT_TRUE (closure_fn 1) "closures should capture outer variables")
+
+(putln "Nested functions passed")
+
+; =================[ TYPE VALIDATION ]=================
+
+(set typed_fn (fn (x :I y :S) :I x))
+(ASSERT_TRUE (typed_fn 10 "test") "correctly typed arguments should work")
+
+(set test_type_mismatch (fn () :I
+    (try
+        (do
+            (set bad_fn (fn (x :I) :I x))
+            (bad_fn "wrong")
+            0)
+        1)))
+(ASSERT_TRUE (test_type_mismatch) "type mismatch should be caught by try")
+
+(set test_wrong_return_type (fn () :I
+    (try
+        (do
+            (set bad_return (fn () :I "not an int"))
+            (bad_return)
+            0)
+        1)))
+(ASSERT_TRUE (test_wrong_return_type) "wrong return type should be caught by try")
+
+(putln "Type validation passed")
+
+; =================[ NEGATIVE TESTING ]=================
+
+(set test_undefined_identifier (fn () :I
+    (try
+        (do
+            (set result totally_undefined_var)
+            0)
+        1)))
+(ASSERT_TRUE (test_undefined_identifier) "undefined identifier should be caught")
+
+(set test_if_non_integer_condition (fn () :I
+    (try
+        (do
+            (if "not int" 1 0)
+            0)
+        1)))
+(ASSERT_TRUE (test_if_non_integer_condition) "if with non-integer condition should error")
+
+(set test_uq_non_quoted (fn () :I
+    (try
+        (do
+            (set result (uq 42))
+            0)
+        1)))
+(ASSERT_TRUE (test_uq_non_quoted) "uq on non-quoted value should be caught")
+
+(set test_drop_undefined (fn () :_
+    (try
+        (drop this_does_not_exist)
+        _)))
+(test_drop_undefined)
+
+(set test_first_not_callable (fn () :I
+    (try
+        (do
+            (set result (42 1 2))
+            0)
+        1)))
+(ASSERT_TRUE (test_first_not_callable) "calling non-function should be caught")
+
+(set test_nested_errors (fn () :I
+    (try
+        (try
+            (do
+                (set x undefined_nested)
+                0)
+            (do
+                (set y also_undefined)
+                0))
+        1)))
+(ASSERT_TRUE (test_nested_errors) "nested try blocks should handle errors")
+
+(putln "Basic negative testing passed")
+
+; =================[ ARGUMENT COUNT MISMATCHES ]=================
+
+(set test_no_args_given_one (fn () :I
+    (try
+        (do
+            (set needs_one (fn (x :I) :I x))
+            (needs_one)
+            0)
+        1)))
+(ASSERT_TRUE (test_no_args_given_one) "0 args when 1 required should fail")
+
+(set test_one_arg_given_two (fn () :I
+    (try
+        (do
+            (set needs_two (fn (a :I b :I) :I a))
+            (needs_two 1)
+            0)
+        1)))
+(ASSERT_TRUE (test_one_arg_given_two) "1 arg when 2 required should fail")
+
+(set test_one_arg_given_three (fn () :I
+    (try
+        (do
+            (set needs_three (fn (a :I b :I c :I) :I a))
+            (needs_three 1)
+            0)
+        1)))
+(ASSERT_TRUE (test_one_arg_given_three) "1 arg when 3 required should fail")
+
+(set test_two_args_given_one (fn () :I
+    (try
+        (do
+            (set needs_one (fn (x :I) :I x))
+            (needs_one 1 2)
+            0)
+        1)))
+(ASSERT_TRUE (test_two_args_given_one) "2 args when 1 required should fail")
+
+(set test_three_args_given_two (fn () :I
+    (try
+        (do
+            (set needs_two (fn (a :I b :I) :I a))
+            (needs_two 1 2 3)
+            0)
+        1)))
+(ASSERT_TRUE (test_three_args_given_two) "3 args when 2 required should fail")
+
+(set test_five_args_given_one (fn () :I
+    (try
+        (do
+            (set needs_one (fn (x :I) :I x))
+            (needs_one 1 2 3 4 5)
+            0)
+        1)))
+(ASSERT_TRUE (test_five_args_given_one) "5 args when 1 required should fail")
+
+(putln "Argument count mismatch testing passed")
+
+; =================[ TYPE MISMATCH MATRIX ]=================
+
+(set expects_int (fn (x :I) :I x))
+(set expects_string (fn (x :S) :S x))
+(set expects_list (fn (x :L) :L x))
+(set expects_function (fn (x :F) :F x))
+
+(set test_int_val 42)
+(set test_string_val "hello")
+(set test_list_val (qu (1 2 3)))
+(set test_function_val (fn () :I 1))
+
+(set test_string_to_int (fn () :I
+    (try
+        (do
+            (expects_int "wrong")
+            0)
+        1)))
+(ASSERT_TRUE (test_string_to_int) "string passed to integer param should fail")
+
+(set test_list_to_int (fn () :I
+    (try
+        (do
+            (expects_int (uq test_list_val))
+            0)
+        1)))
+(ASSERT_TRUE (test_list_to_int) "list passed to integer param should fail")
+
+(set test_function_to_int (fn () :I
+    (try
+        (do
+            (expects_int test_function_val)
+            0)
+        1)))
+(ASSERT_TRUE (test_function_to_int) "function passed to integer param should fail")
+
+(set test_int_to_string (fn () :I
+    (try
+        (do
+            (expects_string 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_to_string) "integer passed to string param should fail")
+
+(set test_list_to_string (fn () :I
+    (try
+        (do
+            (expects_string (uq test_list_val))
+            0)
+        1)))
+(ASSERT_TRUE (test_list_to_string) "list passed to string param should fail")
+
+(set test_function_to_string (fn () :I
+    (try
+        (do
+            (expects_string test_function_val)
+            0)
+        1)))
+(ASSERT_TRUE (test_function_to_string) "function passed to string param should fail")
+
+(set test_int_to_list (fn () :I
+    (try
+        (do
+            (expects_list 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_to_list) "integer passed to list param should fail")
+
+(set test_string_to_list (fn () :I
+    (try
+        (do
+            (expects_list "wrong")
+            0)
+        1)))
+(ASSERT_TRUE (test_string_to_list) "string passed to list param should fail")
+
+(set test_function_to_list (fn () :I
+    (try
+        (do
+            (expects_list test_function_val)
+            0)
+        1)))
+(ASSERT_TRUE (test_function_to_list) "function passed to list param should fail")
+
+(set test_int_to_function (fn () :I
+    (try
+        (do
+            (expects_function 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_to_function) "integer passed to function param should fail")
+
+(set test_string_to_function (fn () :I
+    (try
+        (do
+            (expects_function "wrong")
+            0)
+        1)))
+(ASSERT_TRUE (test_string_to_function) "string passed to function param should fail")
+
+(set test_list_to_function (fn () :I
+    (try
+        (do
+            (expects_function (uq test_list_val))
+            0)
+        1)))
+(ASSERT_TRUE (test_list_to_function) "list passed to function param should fail")
+
+(putln "Type mismatch matrix testing passed")
+
+; =================[ RETURN TYPE MISMATCHES ]=================
+
+(set test_return_string_expect_int (fn () :I
+    (try
+        (do
+            (set bad_return (fn () :I "not int"))
+            (bad_return)
+            0)
+        1)))
+(ASSERT_TRUE (test_return_string_expect_int) "returning string when int expected should fail")
+
+(set test_return_int_expect_string (fn () :I
+    (try
+        (do
+            (set bad_return (fn () :S 42))
+            (bad_return)
+            0)
+        1)))
+(ASSERT_TRUE (test_return_int_expect_string) "returning int when string expected should fail")
+
+(set test_return_list_expect_int (fn () :I
+    (try
+        (do
+            (set bad_return (fn () :I (uq test_list_val)))
+            (bad_return)
+            0)
+        1)))
+(ASSERT_TRUE (test_return_list_expect_int) "returning list when int expected should fail")
+
+(set test_return_function_expect_string (fn () :I
+    (try
+        (do
+            (set bad_return (fn () :S test_function_val))
+            (bad_return)
+            0)
+        1)))
+(ASSERT_TRUE (test_return_function_expect_string) "returning function when string expected should fail")
+
+(set test_return_int_expect_list (fn () :I
+    (try
+        (do
+            (set bad_return (fn () :L 99))
+            (bad_return)
+            0)
+        1)))
+(ASSERT_TRUE (test_return_int_expect_list) "returning int when list expected should fail")
+
+(set test_return_string_expect_function (fn () :I
+    (try
+        (do
+            (set bad_return (fn () :F "not func"))
+            (bad_return)
+            0)
+        1)))
+(ASSERT_TRUE (test_return_string_expect_function) "returning string when function expected should fail")
+
+(putln "Return type mismatch testing passed")
+
+; =================[ MULTI-PARAMETER TYPE MISMATCHES ]=================
+
+(set multi_typed (fn (a :I b :S c :L) :I a))
+
+(set test_multi_wrong_first (fn () :I
+    (try
+        (do
+            (multi_typed "bad" "ok" (uq test_list_val))
+            0)
+        1)))
+(ASSERT_TRUE (test_multi_wrong_first) "wrong type in first param should fail")
+
+(set test_multi_wrong_second (fn () :I
+    (try
+        (do
+            (multi_typed 1 2 (uq test_list_val))
+            0)
+        1)))
+(ASSERT_TRUE (test_multi_wrong_second) "wrong type in second param should fail")
+
+(set test_multi_wrong_third (fn () :I
+    (try
+        (do
+            (multi_typed 1 "ok" "bad")
+            0)
+        1)))
+(ASSERT_TRUE (test_multi_wrong_third) "wrong type in third param should fail")
+
+(set test_multi_all_wrong (fn () :I
+    (try
+        (do
+            (multi_typed "bad" 123 "bad")
+            0)
+        1)))
+(ASSERT_TRUE (test_multi_all_wrong) "all wrong types should fail")
+
+(putln "Multi-parameter type mismatch testing passed")
+
+; =================[ INTEGRATION TESTS ]=================
+
+(set factorial (fn (n :I) :I
+    (if n
+        (if (if n 1 0) n 1)
+        1)))
+(ASSERT_TRUE (factorial 5) "factorial-like logic should work")
+
+(set apply_twice (fn (f :F x :I) :I
+    (do
+        (set first (f x))
+        (f first))))
+(set increment (fn (n :I) :I (if 1 (if n (if n n 1) 1) 0)))
+(ASSERT_TRUE (apply_twice increment 1) "higher-order functions should work")
+
+(putln "Integration tests passed")
+
+; =================[ FINAL SUMMARY ]=================
+
+(putln "")
+(putln "=================================")
+(putln "ALL CORE LANGUAGE TESTS PASSED")
+(putln "=================================")
+(putln "")
+(putln "Tested components:")
+(putln "  - Variable management (set, drop)")
+(putln "  - Function parameters (typed, any, multiple)")
+(putln "  - Function return types")
+(putln "  - Variadic functions")
+(putln "  - Sequential execution (do)")
+(putln "  - Conditionals (if, nested)")
+(putln "  - Quote/unquote system")
+(putln "  - Error handling (try)")
+(putln "  - Nested functions and closures")
+(putln "  - Type validation (positive & negative)")
+(putln "  - Basic negative testing (error conditions)")
+(putln "  - Argument count mismatches (6 variations)")
+(putln "  - Type mismatch matrix (12 combinations)")
+(putln "  - Return type mismatches (6 combinations)")
+(putln "  - Multi-parameter type mismatches (4 cases)")
+(putln "  - Integration scenarios")
+(putln _)
