@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bosley/slpx/pkg/object"
 	"github.com/bosley/slpx/pkg/slp"
@@ -117,6 +118,16 @@ func (c *coreFunctions) Functions() map[object.Identifier]EnvFunction {
 			},
 			ReturnType: object.OBJ_TYPE_ANY,
 			Body:       cmdIf,
+		},
+		"match": {
+			EvaluateArgs: false,
+			Parameters: []EnvParameter{
+				{Name: "value", Type: object.OBJ_TYPE_ANY},
+				{Name: "patterns", Type: object.OBJ_TYPE_ANY},
+			},
+			ReturnType: object.OBJ_TYPE_ANY,
+			Variadic:   true,
+			Body:       cmdMatch,
 		},
 	}
 }
@@ -504,4 +515,120 @@ func cmdIf(ctx EvaluationContext, args object.List) (object.Obj, error) {
 	}
 
 	return ctx.Evaluate(args[2])
+}
+
+func matchString(value, pattern string) bool {
+	startsWithWildcard := strings.HasPrefix(pattern, "*")
+	endsWithWildcard := false
+
+	if len(pattern) > 0 && strings.HasSuffix(pattern, "*") {
+		if len(pattern) == 1 || pattern[len(pattern)-2] != '\\' {
+			endsWithWildcard = true
+		}
+	}
+
+	cleanPattern := pattern
+	if startsWithWildcard {
+		cleanPattern = cleanPattern[1:]
+	}
+	if endsWithWildcard {
+		cleanPattern = cleanPattern[:len(cleanPattern)-1]
+	}
+
+	cleanPattern = strings.ReplaceAll(cleanPattern, "\\*", "*")
+
+	if startsWithWildcard && endsWithWildcard {
+		return strings.Contains(value, cleanPattern)
+	} else if startsWithWildcard {
+		return strings.HasSuffix(value, cleanPattern)
+	} else if endsWithWildcard {
+		return strings.HasPrefix(value, cleanPattern)
+	}
+
+	return value == cleanPattern
+}
+
+func cmdMatch(ctx EvaluationContext, args object.List) (object.Obj, error) {
+	evalCtx := ctx.(*evalCtx)
+	if len(args) < 2 {
+		argPos := uint16(0)
+		if len(args) > 0 {
+			argPos = args[0].Pos
+		}
+		return evalCtx.makeError(argPos, fmt.Sprintf("match: requires at least 2 arguments (value, pattern...), got %d", len(args))), nil
+	}
+
+	valueToMatch, err := ctx.Evaluate(args[0])
+	if err != nil {
+		return object.Obj{}, err
+	}
+
+	if valueToMatch.Type == object.OBJ_TYPE_ERROR {
+		return valueToMatch, nil
+	}
+
+	patterns := args[1:]
+
+	for _, patternArg := range patterns {
+		evaluatedPattern, err := ctx.Evaluate(patternArg)
+		if err != nil {
+			return object.Obj{}, err
+		}
+
+		if evaluatedPattern.Type == object.OBJ_TYPE_ERROR {
+			return evaluatedPattern, nil
+		}
+
+		if evaluatedPattern.Type != object.OBJ_TYPE_LIST {
+			return evalCtx.makeErrorFromObj(patternArg, fmt.Sprintf("match: pattern must be a list, got %s", evaluatedPattern.Type)), nil
+		}
+
+		patternList := evaluatedPattern.D.(object.List)
+		if len(patternList) != 2 {
+			return evalCtx.makeErrorFromObj(patternArg, fmt.Sprintf("match: pattern must be a 2-element list [value, function], got %d elements", len(patternList))), nil
+		}
+
+		patternValue := patternList[0]
+		patternFuncObj := patternList[1]
+
+		patternFunc, err := ctx.Evaluate(patternFuncObj)
+		if err != nil {
+			return object.Obj{}, err
+		}
+
+		if patternFunc.Type == object.OBJ_TYPE_ERROR {
+			return patternFunc, nil
+		}
+
+		if patternFunc.Type != object.OBJ_TYPE_FUNCTION {
+			return evalCtx.makeErrorFromObj(patternArg, fmt.Sprintf("match: second element must be a function, got %s", patternFunc.Type)), nil
+		}
+
+		if valueToMatch.Type != patternValue.Type {
+			continue
+		}
+
+		matched := false
+
+		switch patternValue.Type {
+		case object.OBJ_TYPE_STRING:
+			matched = matchString(valueToMatch.D.(string), patternValue.D.(string))
+		case object.OBJ_TYPE_INTEGER:
+			matched = valueToMatch.D.(object.Integer) == patternValue.D.(object.Integer)
+		case object.OBJ_TYPE_REAL:
+			matched = valueToMatch.D.(object.Real) == patternValue.D.(object.Real)
+		default:
+			return evalCtx.makeErrorFromObj(patternValue, fmt.Sprintf("match: pattern value must be string, integer, or real, got %s", patternValue.Type)), nil
+		}
+
+		if matched {
+			result, err := evalCtx.executeObjectFunction(patternFunc, object.List{valueToMatch})
+			if err != nil {
+				return object.Obj{}, err
+			}
+			return result, nil
+		}
+	}
+
+	return evalCtx.makeErrorFromObj(args[0], "match: no pattern matched"), nil
 }
