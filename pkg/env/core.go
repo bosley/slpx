@@ -171,6 +171,7 @@ func cmdPutln(ctx EvaluationContext, args object.List) (object.Obj, error) {
 	}
 
 	evalCtx.io.WriteString("\n")
+	evalCtx.io.Flush()
 	return object.Obj{Type: object.OBJ_TYPE_NONE, D: object.None{}}, nil
 }
 
