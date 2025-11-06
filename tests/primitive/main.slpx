@@ -35,43 +35,48 @@
     (do
         (putln "Error:" $error "Failed to load bootstrap")
         (exit 1)))
-
+(io/flush)
 (try
     (use "numbers.slpx")
     (do
         (putln "Error:" $error "Failed to load numbers")
         (exit 1)))
-
+(io/flush)
 (try
     (use "reflection.slpx")
     (do
         (putln "Error:" $error "Failed to load reflection")
         (exit 1)))
-
+(io/flush)
 (try
     (use "str.slpx")
     (do
         (putln "Error:" $error "Failed to load str")
         (exit 1)))
-
+(io/flush)
 (try
     (use "list.slpx")
     (do
         (putln "Error:" $error "Failed to load list")
         (exit 1)))
-
+(io/flush)
 (try
     (use "fs.slpx")
     (do
         (putln "Error:" $error "Failed to load fs")
         (exit 1)))
-
+(io/flush)
 (try
     (use "bits.slpx")
     (do
         (putln "Error:" $error "Failed to load bits")
         (exit 1)))
-
-
+(io/flush)
+(try
+    (use "match.slpx")
+    (do
+        (putln "Error:" $error "Failed to load match")
+        (exit 1)))
+(io/flush)
 (exit 0) ; should be reached
 (exit 1) ; should never be reached

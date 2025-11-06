@@ -518,6 +518,10 @@ func cmdIf(ctx EvaluationContext, args object.List) (object.Obj, error) {
 }
 
 func matchString(value, pattern string) bool {
+	if len(pattern) == 0 {
+		return value == ""
+	}
+
 	startsWithWildcard := strings.HasPrefix(pattern, "*")
 	endsWithWildcard := false
 
@@ -528,10 +532,10 @@ func matchString(value, pattern string) bool {
 	}
 
 	cleanPattern := pattern
-	if startsWithWildcard {
+	if startsWithWildcard && len(cleanPattern) > 0 {
 		cleanPattern = cleanPattern[1:]
 	}
-	if endsWithWildcard {
+	if endsWithWildcard && len(cleanPattern) > 0 {
 		cleanPattern = cleanPattern[:len(cleanPattern)-1]
 	}
 
