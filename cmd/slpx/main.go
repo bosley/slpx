@@ -99,6 +99,7 @@ func main() {
 	session := repl.NewSessionBuilder(logger).Build(absFilePath)
 
 	result, err := session.Evaluate(string(content))
+	session.GetIO().Flush()
 	if err != nil {
 		if parseErr, ok := err.(*slp.ParseError); ok {
 			line, col, lineStart, lineEnd := positionToLineCol(string(content), parseErr.Position)

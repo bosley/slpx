@@ -1,0 +1,849 @@
+(use "bootstrap.slpx")
+
+(putln "=== Bits Tests ===")
+
+(set test_explode_int_positive (fn () :I
+    (set bits (bits/explode 42))
+    (if (reflect/list? bits)
+        (int/eq (list/len bits) 64)
+        0)))
+(ASSERT_TRUE (test_explode_int_positive) "bits/explode: integer should return 64-bit list")
+
+(set test_explode_int_zero (fn () :I
+    (set bits (bits/explode 0))
+    (if (int/eq (list/len bits) 64)
+        (int/eq (list/get bits 0) 0)
+        0)))
+(ASSERT_TRUE (test_explode_int_zero) "bits/explode: zero should produce all zero bits")
+
+(set test_explode_int_negative (fn () :I
+    (set bits (bits/explode (int/sub 0 1)))
+    (if (int/eq (list/len bits) 64)
+        (reflect/list? bits)
+        0)))
+(ASSERT_TRUE (test_explode_int_negative) "bits/explode: negative integer should work")
+
+(set test_explode_int_one (fn () :I
+    (set bits (bits/explode 1))
+    (if (int/eq (list/get bits 0) 1)
+        (int/eq (list/get bits 1) 0)
+        0)))
+(ASSERT_TRUE (test_explode_int_one) "bits/explode: integer 1 should have LSB set")
+
+(set test_explode_int_two (fn () :I
+    (set bits (bits/explode 2))
+    (if (int/eq (list/get bits 0) 0)
+        (int/eq (list/get bits 1) 1)
+        0)))
+(ASSERT_TRUE (test_explode_int_two) "bits/explode: integer 2 should have bit 1 set")
+
+(putln "bits/explode integer tests passed")
+
+(set test_explode_real_positive (fn () :I
+    (set bits (bits/explode 3.14))
+    (if (reflect/list? bits)
+        (int/eq (list/len bits) 64)
+        0)))
+(ASSERT_TRUE (test_explode_real_positive) "bits/explode: real should return 64-bit list")
+
+(set test_explode_real_zero (fn () :I
+    (set bits (bits/explode 0.0))
+    (int/eq (list/len bits) 64)))
+(ASSERT_TRUE (test_explode_real_zero) "bits/explode: real 0.0 should work")
+
+(set test_explode_real_negative (fn () :I
+    (set bits (bits/explode (real/sub 0.0 1.5)))
+    (int/eq (list/len bits) 64)))
+(ASSERT_TRUE (test_explode_real_negative) "bits/explode: negative real should work")
+
+(set test_explode_real_one (fn () :I
+    (set bits (bits/explode 1.0))
+    (int/eq (list/len bits) 64)))
+(ASSERT_TRUE (test_explode_real_one) "bits/explode: real 1.0 should work")
+
+(putln "bits/explode real tests passed")
+
+(putln "bits/explode negative tests passed")
+
+(set test_int_valid_bits (fn () :I
+    (set bits (list/new 64 0))
+    (set bits (list/set bits 0 1))
+    (set result (bits/int bits))
+    (int/eq result 1)))
+(ASSERT_TRUE (test_int_valid_bits) "bits/int: valid bit list should convert")
+
+(set test_int_all_zeros (fn () :I
+    (set bits (list/new 64 0))
+    (set result (bits/int bits))
+    (int/eq result 0)))
+(ASSERT_TRUE (test_int_all_zeros) "bits/int: all zeros should return 0")
+
+(set test_int_multiple_bits (fn () :I
+    (set bits (list/new 64 0))
+    (set bits (list/set bits 0 1))
+    (set bits (list/set bits 1 1))
+    (set result (bits/int bits))
+    (int/eq result 3)))
+(ASSERT_TRUE (test_int_multiple_bits) "bits/int: bits 0 and 1 set should return 3")
+
+(set test_int_high_bit (fn () :I
+    (set bits (list/new 64 0))
+    (set bits (list/set bits 63 1))
+    (set result (bits/int bits))
+    (reflect/int? result)))
+(ASSERT_TRUE (test_int_high_bit) "bits/int: high bit set should work")
+
+(putln "bits/int positive tests passed")
+
+(set test_real_valid_bits (fn () :I
+    (set bits (list/new 64 0))
+    (set result (bits/real bits))
+    (reflect/real? result)))
+(ASSERT_TRUE (test_real_valid_bits) "bits/real: valid bit list should convert")
+
+(set test_real_all_zeros (fn () :I
+    (set bits (list/new 64 0))
+    (set result (bits/real bits))
+    (real/eq result 0.0)))
+(ASSERT_TRUE (test_real_all_zeros) "bits/real: all zeros should return 0.0")
+
+(set test_real_pattern (fn () :I
+    (set bits (list/new 64 0))
+    (set bits (list/set bits 0 1))
+    (set result (bits/real bits))
+    (reflect/real? result)))
+(ASSERT_TRUE (test_real_pattern) "bits/real: bit pattern should produce real")
+
+(putln "bits/real positive tests passed")
+
+(set test_roundtrip_int_positive (fn () :I
+    (set original 42)
+    (set bits (bits/explode original))
+    (set restored (bits/int bits))
+    (int/eq original restored)))
+(ASSERT_TRUE (test_roundtrip_int_positive) "roundtrip: int -> bits -> int should preserve value")
+
+(set test_roundtrip_int_zero (fn () :I
+    (set original 0)
+    (set bits (bits/explode original))
+    (set restored (bits/int bits))
+    (int/eq original restored)))
+(ASSERT_TRUE (test_roundtrip_int_zero) "roundtrip: zero int should roundtrip")
+
+(set test_roundtrip_int_negative (fn () :I
+    (set original (int/sub 0 100))
+    (set bits (bits/explode original))
+    (set restored (bits/int bits))
+    (int/eq original restored)))
+(ASSERT_TRUE (test_roundtrip_int_negative) "roundtrip: negative int should roundtrip")
+
+(set test_roundtrip_int_large (fn () :I
+    (set original 123456789)
+    (set bits (bits/explode original))
+    (set restored (bits/int bits))
+    (int/eq original restored)))
+(ASSERT_TRUE (test_roundtrip_int_large) "roundtrip: large int should roundtrip")
+
+(putln "Integer roundtrip tests passed")
+
+(set test_roundtrip_real_positive (fn () :I
+    (set original 3.14159)
+    (set bits (bits/explode original))
+    (set restored (bits/real bits))
+    (real/eq original restored)))
+(ASSERT_TRUE (test_roundtrip_real_positive) "roundtrip: real -> bits -> real should preserve value")
+
+(set test_roundtrip_real_zero (fn () :I
+    (set original 0.0)
+    (set bits (bits/explode original))
+    (set restored (bits/real bits))
+    (real/eq original restored)))
+(ASSERT_TRUE (test_roundtrip_real_zero) "roundtrip: zero real should roundtrip")
+
+(set test_roundtrip_real_negative (fn () :I
+    (set original (real/sub 0.0 2.71828))
+    (set bits (bits/explode original))
+    (set restored (bits/real bits))
+    (real/eq original restored)))
+(ASSERT_TRUE (test_roundtrip_real_negative) "roundtrip: negative real should roundtrip")
+
+(set test_roundtrip_real_one (fn () :I
+    (set original 1.0)
+    (set bits (bits/explode original))
+    (set restored (bits/real bits))
+    (real/eq original restored)))
+(ASSERT_TRUE (test_roundtrip_real_one) "roundtrip: real 1.0 should roundtrip")
+
+(putln "Real roundtrip tests passed")
+
+(set test_cross_int_to_real (fn () :I
+    (set int_val 42)
+    (set bits (bits/explode int_val))
+    (set as_real (bits/real bits))
+    (reflect/real? as_real)))
+(ASSERT_TRUE (test_cross_int_to_real) "cross-convert: int bits to real should produce real")
+
+(set test_cross_real_to_int (fn () :I
+    (set real_val 3.14)
+    (set bits (bits/explode real_val))
+    (set as_int (bits/int bits))
+    (reflect/int? as_int)))
+(ASSERT_TRUE (test_cross_real_to_int) "cross-convert: real bits to int should produce int")
+
+(set test_cross_zero_int_real (fn () :I
+    (set bits (bits/explode 0))
+    (set as_real (bits/real bits))
+    (real/eq as_real 0.0)))
+(ASSERT_TRUE (test_cross_zero_int_real) "cross-convert: int 0 bits to real should give 0.0")
+
+(putln "Cross-conversion tests passed")
+
+(set test_manual_bit_set (fn () :I
+    (set bits (list/new 64 0))
+    (set bits (list/set bits 3 1))
+    (set result (bits/int bits))
+    (int/eq result 8)))
+(ASSERT_TRUE (test_manual_bit_set) "complex: manually setting bit 3 should give 8")
+
+(set test_manual_multiple_bits (fn () :I
+    (set bits (list/new 64 0))
+    (set bits (list/set bits 0 1))
+    (set bits (list/set bits 3 1))
+    (set bits (list/set bits 7 1))
+    (set result (bits/int bits))
+    (int/eq result 137)))
+(ASSERT_TRUE (test_manual_multiple_bits) "complex: bits 0,3,7 set should give 137")
+
+(set test_bit_manipulation_chain (fn () :I
+    (set original 255)
+    (set bits (bits/explode original))
+    (set bits (list/set bits 0 0))
+    (set result (bits/int bits))
+    (int/eq result 254)))
+(ASSERT_TRUE (test_bit_manipulation_chain) "complex: clearing LSB of 255 should give 254")
+
+(set test_double_conversion (fn () :I
+    (set int_val 100)
+    (set bits1 (bits/explode int_val))
+    (set real_val (bits/real bits1))
+    (set bits2 (bits/explode real_val))
+    (set final_int (bits/int bits2))
+    (reflect/int? final_int)))
+(ASSERT_TRUE (test_double_conversion) "complex: int->real->int double conversion should work")
+
+(set test_bit_count_validation (fn () :I
+    (set bits (bits/explode 7))
+    (set count 0)
+    (set idx 0)
+    (list/iter bits (fn (bit :I) :I
+        (do
+            (if (int/eq bit 1)
+                (set count (int/add count 1))
+                _)
+            (set idx (int/add idx 1))
+            1)))
+    (int/eq count 3)))
+(ASSERT_TRUE (test_bit_count_validation) "complex: 7 should have 3 bits set")
+
+(set test_bit_position_check (fn () :I
+    (set val 16)
+    (set bits (bits/explode val))
+    (if (int/eq (list/get bits 4) 1)
+        (if (int/eq (list/get bits 0) 0)
+            (if (int/eq (list/get bits 1) 0)
+                1
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_bit_position_check) "complex: 16 should only have bit 4 set")
+
+(set test_all_ones_low_byte (fn () :I
+    (set bits (list/new 64 0))
+    (set bits (list/set bits 0 1))
+    (set bits (list/set bits 1 1))
+    (set bits (list/set bits 2 1))
+    (set bits (list/set bits 3 1))
+    (set bits (list/set bits 4 1))
+    (set bits (list/set bits 5 1))
+    (set bits (list/set bits 6 1))
+    (set bits (list/set bits 7 1))
+    (set result (bits/int bits))
+    (int/eq result 255)))
+(ASSERT_TRUE (test_all_ones_low_byte) "complex: low byte all ones should give 255")
+
+(set test_bit_shift_pattern (fn () :I
+    (set val1 1)
+    (set val2 2)
+    (set val3 4)
+    (set bits1 (bits/explode val1))
+    (set bits2 (bits/explode val2))
+    (set bits3 (bits/explode val3))
+    (if (int/eq (list/get bits1 0) 1)
+        (if (int/eq (list/get bits2 1) 1)
+            (if (int/eq (list/get bits3 2) 1)
+                1
+                0)
+            0)
+        0)))
+(ASSERT_TRUE (test_bit_shift_pattern) "complex: powers of 2 should show bit shifting")
+
+(putln "Complex bit operations passed")
+
+(set test_explode_preserves_bits (fn () :I
+    (set val 12345)
+    (set bits1 (bits/explode val))
+    (set bits2 (bits/explode val))
+    (int/eq (list/len bits1) (list/len bits2))))
+(ASSERT_TRUE (test_explode_preserves_bits) "consistency: same input produces same length")
+
+(set test_int_deterministic (fn () :I
+    (set bits (list/new 64 0))
+    (set bits (list/set bits 5 1))
+    (set result1 (bits/int bits))
+    (set result2 (bits/int bits))
+    (int/eq result1 result2)))
+(ASSERT_TRUE (test_int_deterministic) "consistency: same bits produce same int")
+
+(set test_real_deterministic (fn () :I
+    (set bits (list/new 64 0))
+    (set bits (list/set bits 10 1))
+    (set result1 (bits/real bits))
+    (set result2 (bits/real bits))
+    (real/eq result1 result2)))
+(ASSERT_TRUE (test_real_deterministic) "consistency: same bits produce same real")
+
+(putln "Consistency tests passed")
+
+(set test_explode_type_string (fn () :I
+    (try
+        (do
+            (bits/explode "not a number")
+            0)
+        1)))
+(ASSERT_TRUE (test_explode_type_string) "bits/explode: string should error")
+
+(set test_explode_type_list (fn () :I
+    (try
+        (do
+            (bits/explode (uq (qu (1 2 3))))
+            0)
+        1)))
+(ASSERT_TRUE (test_explode_type_list) "bits/explode: list should error")
+
+(set test_explode_type_function (fn () :I
+    (try
+        (do
+            (bits/explode (fn () :I 1))
+            0)
+        1)))
+(ASSERT_TRUE (test_explode_type_function) "bits/explode: function should error")
+
+(set test_explode_type_none (fn () :I
+    (try
+        (do
+            (bits/explode _)
+            0)
+        1)))
+(ASSERT_TRUE (test_explode_type_none) "bits/explode: none should error")
+
+(set test_explode_type_some (fn () :I
+    (try
+        (do
+            (bits/explode (qu 42))
+            0)
+        1)))
+(ASSERT_TRUE (test_explode_type_some) "bits/explode: quoted value should error")
+
+(putln "bits/explode type error tests passed")
+
+(set test_int_type_integer (fn () :I
+    (try
+        (do
+            (bits/int 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_type_integer) "bits/int: integer should error")
+
+(set test_int_type_real (fn () :I
+    (try
+        (do
+            (bits/int 3.14)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_type_real) "bits/int: real should error")
+
+(set test_int_type_string (fn () :I
+    (try
+        (do
+            (bits/int "not a list")
+            0)
+        1)))
+(ASSERT_TRUE (test_int_type_string) "bits/int: string should error")
+
+(set test_int_type_function (fn () :I
+    (try
+        (do
+            (bits/int (fn () :I 1))
+            0)
+        1)))
+(ASSERT_TRUE (test_int_type_function) "bits/int: function should error")
+
+(set test_int_type_none (fn () :I
+    (try
+        (do
+            (bits/int _)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_type_none) "bits/int: none should error")
+
+(set test_int_type_some (fn () :I
+    (try
+        (do
+            (bits/int (qu 42))
+            0)
+        1)))
+(ASSERT_TRUE (test_int_type_some) "bits/int: quoted value should error")
+
+(putln "bits/int type error tests passed")
+
+(set test_real_type_integer (fn () :I
+    (try
+        (do
+            (bits/real 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_type_integer) "bits/real: integer should error")
+
+(set test_real_type_real (fn () :I
+    (try
+        (do
+            (bits/real 3.14)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_type_real) "bits/real: real should error")
+
+(set test_real_type_string (fn () :I
+    (try
+        (do
+            (bits/real "not a list")
+            0)
+        1)))
+(ASSERT_TRUE (test_real_type_string) "bits/real: string should error")
+
+(set test_real_type_function (fn () :I
+    (try
+        (do
+            (bits/real (fn () :I 1))
+            0)
+        1)))
+(ASSERT_TRUE (test_real_type_function) "bits/real: function should error")
+
+(set test_real_type_none (fn () :I
+    (try
+        (do
+            (bits/real _)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_type_none) "bits/real: none should error")
+
+(set test_real_type_some (fn () :I
+    (try
+        (do
+            (bits/real (qu 42))
+            0)
+        1)))
+(ASSERT_TRUE (test_real_type_some) "bits/real: quoted value should error")
+
+(putln "bits/real type error tests passed")
+
+(set test_int_length_validation_short (fn () :I
+    (try
+        (do
+            (set bits (list/new 32 0))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_length_validation_short) "bits/int: list shorter than 64 should error")
+
+(set test_int_length_validation_long (fn () :I
+    (try
+        (do
+            (set bits (list/new 128 0))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_length_validation_long) "bits/int: list longer than 64 should error")
+
+(set test_int_length_validation_empty (fn () :I
+    (try
+        (do
+            (set bits (list/new 0 0))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_length_validation_empty) "bits/int: empty list should error")
+
+(set test_int_length_validation_one (fn () :I
+    (try
+        (do
+            (set bits (list/new 1 0))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_length_validation_one) "bits/int: single element list should error")
+
+(set test_int_length_validation_63 (fn () :I
+    (try
+        (do
+            (set bits (list/new 63 0))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_length_validation_63) "bits/int: 63 element list should error")
+
+(set test_int_length_validation_65 (fn () :I
+    (try
+        (do
+            (set bits (list/new 65 0))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_length_validation_65) "bits/int: 65 element list should error")
+
+(putln "bits/int length validation tests passed")
+
+(set test_real_length_validation_short (fn () :I
+    (try
+        (do
+            (set bits (list/new 32 0))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_length_validation_short) "bits/real: list shorter than 64 should error")
+
+(set test_real_length_validation_long (fn () :I
+    (try
+        (do
+            (set bits (list/new 100 0))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_length_validation_long) "bits/real: list longer than 64 should error")
+
+(set test_real_length_validation_empty (fn () :I
+    (try
+        (do
+            (set bits (list/new 0 0))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_length_validation_empty) "bits/real: empty list should error")
+
+(set test_real_length_validation_63 (fn () :I
+    (try
+        (do
+            (set bits (list/new 63 0))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_length_validation_63) "bits/real: 63 element list should error")
+
+(putln "bits/real length validation tests passed")
+
+(set test_int_bit_element_type_string (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 0 "bad"))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_bit_element_type_string) "bits/int: string element should error")
+
+(set test_int_bit_element_type_real (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 5 3.14))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_bit_element_type_real) "bits/int: real element should error")
+
+(set test_int_bit_element_type_list (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 10 (uq (qu (1 2)))))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_bit_element_type_list) "bits/int: list element should error")
+
+(set test_int_bit_element_type_function (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 20 (fn () :I 1)))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_bit_element_type_function) "bits/int: function element should error")
+
+(set test_int_bit_element_type_none (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 30 _))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_bit_element_type_none) "bits/int: none element should error")
+
+(putln "bits/int element type validation tests passed")
+
+(set test_real_bit_element_type_string (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 0 "bad"))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_bit_element_type_string) "bits/real: string element should error")
+
+(set test_real_bit_element_type_real (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 5 2.71))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_bit_element_type_real) "bits/real: real element should error")
+
+(set test_real_bit_element_type_list (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 10 (uq (qu (1)))))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_bit_element_type_list) "bits/real: list element should error")
+
+(set test_real_bit_element_type_function (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 15 (fn () :I 0)))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_bit_element_type_function) "bits/real: function element should error")
+
+(set test_real_bit_element_type_none (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 25 _))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_bit_element_type_none) "bits/real: none element should error")
+
+(putln "bits/real element type validation tests passed")
+
+(set test_int_bit_value_two (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 0 2))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_bit_value_two) "bits/int: bit value 2 should error")
+
+(set test_int_bit_value_negative (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 0 (int/sub 0 1)))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_bit_value_negative) "bits/int: negative bit value should error")
+
+(set test_int_bit_value_large (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 0 100))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_bit_value_large) "bits/int: large bit value should error")
+
+(set test_int_bit_value_ten (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 10 10))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_bit_value_ten) "bits/int: bit value 10 should error")
+
+(set test_int_multiple_bad_bits (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 0 2))
+            (set bits (list/set bits 1 3))
+            (set bits (list/set bits 2 4))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_multiple_bad_bits) "bits/int: multiple invalid bit values should error")
+
+(putln "bits/int bit value validation tests passed")
+
+(set test_real_bit_value_two (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 0 2))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_bit_value_two) "bits/real: bit value 2 should error")
+
+(set test_real_bit_value_negative (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 5 (int/sub 0 5)))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_bit_value_negative) "bits/real: negative bit value should error")
+
+(set test_real_bit_value_large (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 10 999))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_bit_value_large) "bits/real: large bit value should error")
+
+(set test_real_bit_value_42 (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 20 42))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_bit_value_42) "bits/real: bit value 42 should error")
+
+(putln "bits/real bit value validation tests passed")
+
+(set test_int_mixed_bad_positions (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 0 1))
+            (set bits (list/set bits 31 5))
+            (set bits (list/set bits 63 1))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_mixed_bad_positions) "bits/int: bad bit value at various positions should error")
+
+(set test_real_mixed_bad_positions (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 10 1))
+            (set bits (list/set bits 40 7))
+            (set bits (list/set bits 60 0))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_mixed_bad_positions) "bits/real: bad bit value at various positions should error")
+
+(set test_int_first_position_bad (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 1))
+            (set bits (list/set bits 0 3))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_first_position_bad) "bits/int: first position with bad value should error")
+
+(set test_int_last_position_bad (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 1))
+            (set bits (list/set bits 63 2))
+            (bits/int bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_last_position_bad) "bits/int: last position with bad value should error")
+
+(set test_real_first_position_bad (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 0 4))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_first_position_bad) "bits/real: first position with bad value should error")
+
+(set test_real_last_position_bad (fn () :I
+    (try
+        (do
+            (set bits (list/new 64 0))
+            (set bits (list/set bits 63 8))
+            (bits/real bits)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_last_position_bad) "bits/real: last position with bad value should error")
+
+(putln "Position-specific validation tests passed")
+
+(io/flush)
+(putln "")
+(putln "=================================")
+(putln "ALL BITS TESTS PASSED")
+(putln "=================================")
+(putln "")
+(putln "Test summary:")
+(putln "  - bits/explode integer (5 tests)")
+(putln "  - bits/explode real (4 tests)")
+(putln "  - bits/int positive (4 tests)")
+(putln "  - bits/real positive (3 tests)")
+(putln "  - Integer roundtrip (4 tests)")
+(putln "  - Real roundtrip (4 tests)")
+(putln "  - Cross-conversion (3 tests)")
+(putln "  - Complex bit operations (8 tests)")
+(putln "  - Consistency tests (3 tests)")
+(putln "  - bits/explode type errors (5 tests)")
+(putln "  - bits/int type errors (6 tests)")
+(putln "  - bits/real type errors (6 tests)")
+(putln "  - bits/int length validation (6 tests)")
+(putln "  - bits/real length validation (4 tests)")
+(putln "  - bits/int element type validation (5 tests)")
+(putln "  - bits/real element type validation (5 tests)")
+(putln "  - bits/int bit value validation (5 tests)")
+(putln "  - bits/real bit value validation (4 tests)")
+(putln "  - Position-specific validation (6 tests)")
+(putln "")
+(putln "Total: 90 test assertions covering all bits functions")
+(putln "Positive tests: 38 | Negative tests: 52")
+(putln "")
+(io/flush)

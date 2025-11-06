@@ -66,5 +66,12 @@
         (putln "Error:" $error "Failed to load fs")
         (exit 1)))
 
+(try
+    (use "bits.slpx")
+    (do
+        (putln "Error:" $error "Failed to load bits")
+        (exit 1)))
+
+
 (exit 0) ; should be reached
 (exit 1) ; should never be reached
