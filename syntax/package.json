@@ -1,0 +1,36 @@
+{
+  "name": "slpx",
+  "displayName": "SLPX Language Support",
+  "description": "Syntax highlighting for SLPX programming language",
+  "version": "1.0.0",
+  "publisher": "insula-dev",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "slpx",
+        "aliases": [
+          "SLPX",
+          "slpx"
+        ],
+        "extensions": [
+          ".slpx"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "slpx",
+        "scopeName": "source.slpx",
+        "path": "./syntaxes/slpx.tmLanguage.json"
+      }
+    ]
+  }
+}
+

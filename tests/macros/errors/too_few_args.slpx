@@ -1,0 +1,3 @@
+$(needs_two ?a ?b) (if ?a ?b 0)
+($needs_two 1)
+

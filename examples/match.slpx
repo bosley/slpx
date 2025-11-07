@@ -1,0 +1,51 @@
+(putln "=== Testing match operator ===")
+
+(putln "\n--- Test 1: Exact string match ---")
+(match "hello"
+  '("hello" (fn (x :S) :* (putln "Matched exact string: " x)))
+  '("world" (fn (x :S) :* (putln "This should not print"))))
+
+(putln "\n--- Test 2: Integer match ---")
+(match 44
+  '("some_string" (fn (x :S) :* (putln "This should not print - wrong type")))
+  '(44 (fn (x :I) :* (putln "Matched integer 44: " x)))
+  '(100 (fn (x :I) :* (putln "This should not print - wrong value"))))
+
+(putln "\n--- Test 3: Real number match ---")
+(match 3.14159
+  '(3.14159 (fn (x :R) :* (putln "Matched real: " x))))
+
+(putln "\n--- Test 4: String prefix wildcard (starts with) ---")
+(match "hello world"
+  '("hello*" (fn (x :S) :* (putln "Matched prefix 'hello*': " x))))
+
+(putln "\n--- Test 5: String suffix wildcard (ends with) ---")
+(match "hello world"
+  '("*world" (fn (x :S) :* (putln "Matched suffix '*world': " x))))
+
+(putln "\n--- Test 6: String contains wildcard ---")
+(match "hello beautiful world"
+  '("*beautiful*" (fn (x :S) :* (putln "Matched contains '*beautiful*': " x))))
+
+(putln "\n--- Test 7: Escaped asterisk (literal match) ---")
+(match "file*.txt"
+  '("file\\*.txt" (fn (x :S) :* (putln "Matched literal asterisk: " x))))
+
+(putln "\n--- Test 8: First match wins ---")
+(match 100
+  '(100 (fn (x :I) :* (putln "First match for 100")))
+  '(100 (fn (x :I) :* (putln "This should not print - second pattern"))))
+
+(putln "\n--- Test 9: Using matched value in function ---")
+(match "prefix_data"
+  '("prefix_*" (fn (x :S) :* (do
+    (putln "Processing matched string: " x)
+    (putln "Matched successfully!")))))
+
+(putln "\n--- Test 10: Match with variable ---")
+(set myval 42)
+(match myval
+  '(42 (fn (x :I) :* (putln "Matched variable value: " x))))
+
+(putln "\n=== All tests complete ===")
+

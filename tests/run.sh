@@ -12,6 +12,8 @@ RESET='\033[0m'
 
 TEST_DIRS=(
     "primitive"
+    "macros"
+    "errors"
     "complex"
 )
 
