@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bosley/slpx/pkg/object"
-	"github.com/bosley/slpx/pkg/slp"
+	"github.com/bosley/slpx/pkg/slp/object"
+	"github.com/bosley/slpx/pkg/slp/slp"
 )
 
 type coreFunctions struct{}

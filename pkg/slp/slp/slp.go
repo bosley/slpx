@@ -3,7 +3,7 @@ package slp
 import (
 	"fmt"
 
-	"github.com/bosley/slpx/pkg/object"
+	"github.com/bosley/slpx/pkg/slp/object"
 )
 
 type ParseError struct {

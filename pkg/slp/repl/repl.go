@@ -4,16 +4,16 @@ import (
 	"log/slog"
 	"path/filepath"
 
-	"github.com/bosley/slpx/pkg/cgs/bits"
-	"github.com/bosley/slpx/pkg/cgs/fs"
-	"github.com/bosley/slpx/pkg/cgs/io"
-	"github.com/bosley/slpx/pkg/cgs/list"
-	"github.com/bosley/slpx/pkg/cgs/numbers"
-	"github.com/bosley/slpx/pkg/cgs/reflection"
-	"github.com/bosley/slpx/pkg/cgs/str"
-	"github.com/bosley/slpx/pkg/env"
-	"github.com/bosley/slpx/pkg/object"
-	"github.com/bosley/slpx/pkg/slp"
+	"github.com/bosley/slpx/pkg/slp/cgs/bits"
+	"github.com/bosley/slpx/pkg/slp/cgs/fs"
+	"github.com/bosley/slpx/pkg/slp/cgs/io"
+	"github.com/bosley/slpx/pkg/slp/cgs/list"
+	"github.com/bosley/slpx/pkg/slp/cgs/numbers"
+	"github.com/bosley/slpx/pkg/slp/cgs/reflection"
+	"github.com/bosley/slpx/pkg/slp/cgs/str"
+	"github.com/bosley/slpx/pkg/slp/env"
+	"github.com/bosley/slpx/pkg/slp/object"
+	"github.com/bosley/slpx/pkg/slp/slp"
 )
 
 type sessionEnv struct {

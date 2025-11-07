@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bosley/slpx/pkg/repl"
+	"github.com/bosley/slpx/pkg/slp/repl"
 	tea "github.com/charmbracelet/bubbletea"
 )
 

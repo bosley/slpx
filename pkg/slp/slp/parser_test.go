@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bosley/slpx/pkg/object"
+	"github.com/bosley/slpx/pkg/slp/object"
 )
 
 func TestParser(t *testing.T) {

@@ -1,6 +1,6 @@
 package env
 
-import "github.com/bosley/slpx/pkg/object"
+import "github.com/bosley/slpx/pkg/slp/object"
 
 type memImpl struct {
 	parent  *memImpl

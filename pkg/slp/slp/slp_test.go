@@ -3,7 +3,7 @@ package slp
 import (
 	"testing"
 
-	"github.com/bosley/slpx/pkg/object"
+	"github.com/bosley/slpx/pkg/slp/object"
 )
 
 func TestDeepCopy(t *testing.T) {

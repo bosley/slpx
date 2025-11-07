@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/bosley/slpx/cmd/slpx/tui"
-	"github.com/bosley/slpx/pkg/object"
-	"github.com/bosley/slpx/pkg/repl"
-	"github.com/bosley/slpx/pkg/slp"
+	"github.com/bosley/slpx/pkg/slp/object"
+	"github.com/bosley/slpx/pkg/slp/repl"
+	"github.com/bosley/slpx/pkg/slp/slp"
 )
 
 func positionToLineCol(content string, position int) (line int, col int, lineStart int, lineEnd int) {

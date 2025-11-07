@@ -5,8 +5,8 @@ import (
 	"math/rand/v2"
 	"strconv"
 
-	"github.com/bosley/slpx/pkg/env"
-	"github.com/bosley/slpx/pkg/object"
+	"github.com/bosley/slpx/pkg/slp/env"
+	"github.com/bosley/slpx/pkg/slp/object"
 )
 
 type arithFunctions struct{}

@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bosley/slpx/pkg/object"
+	"github.com/bosley/slpx/pkg/slp/object"
 )
 
 type IdentifiedType string

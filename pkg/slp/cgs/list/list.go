@@ -3,8 +3,8 @@ package list
 import (
 	"strconv"
 
-	"github.com/bosley/slpx/pkg/env"
-	"github.com/bosley/slpx/pkg/object"
+	"github.com/bosley/slpx/pkg/slp/env"
+	"github.com/bosley/slpx/pkg/slp/object"
 )
 
 type listFunctions struct{}

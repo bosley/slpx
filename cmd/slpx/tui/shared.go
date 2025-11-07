@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bosley/slpx/pkg/object"
-	"github.com/bosley/slpx/pkg/repl"
-	"github.com/bosley/slpx/pkg/slp"
+	"github.com/bosley/slpx/pkg/slp/object"
+	"github.com/bosley/slpx/pkg/slp/repl"
+	"github.com/bosley/slpx/pkg/slp/slp"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -147,4 +147,3 @@ func (s *SharedState) ClearOutput() {
 func (s *SharedState) RenderOutput() string {
 	return strings.Join(s.OutputHistory, "\n")
 }
-
