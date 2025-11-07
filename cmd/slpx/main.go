@@ -1,13 +1,13 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/bosley/slpx/cmd/slpx/tui"
 	"github.com/bosley/slpx/pkg/object"
 	"github.com/bosley/slpx/pkg/repl"
 	"github.com/bosley/slpx/pkg/slp"
@@ -74,7 +74,7 @@ func main() {
 	}))
 
 	if len(os.Args) < 2 {
-		startInteractiveREPL(logger)
+		tui.Launch(logger)
 		return
 	}
 
@@ -132,6 +132,9 @@ func main() {
 	fmt.Printf("Result: %s\n", result.Encode())
 }
 
+/*
+
+OLD: But keep for now
 func startInteractiveREPL(logger *slog.Logger) {
 	fmt.Println("SLPX Interactive REPL")
 	fmt.Println("Type expressions to evaluate. Press Ctrl+D (EOF) to exit.")
@@ -190,3 +193,4 @@ func startInteractiveREPL(logger *slog.Logger) {
 
 	fmt.Println()
 }
+*/
