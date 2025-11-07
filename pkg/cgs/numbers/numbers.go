@@ -2,6 +2,7 @@ package numbers
 
 import (
 	"math"
+	"math/rand/v2"
 	"strconv"
 
 	"github.com/bosley/slpx/pkg/env"
@@ -242,6 +243,104 @@ func (a *arithFunctions) Functions() map[object.Identifier]env.EnvFunction {
 			},
 			ReturnType: object.OBJ_TYPE_INTEGER,
 			Body:       cmdRealLte,
+		},
+		"int/rand": {
+			EvaluateArgs: true,
+			Parameters: []env.EnvParameter{
+				{Name: "lower", Type: object.OBJ_TYPE_INTEGER},
+				{Name: "upper", Type: object.OBJ_TYPE_INTEGER},
+			},
+			ReturnType: object.OBJ_TYPE_INTEGER,
+			Body:       cmdIntRand,
+		},
+		"real/rand": {
+			EvaluateArgs: true,
+			Parameters: []env.EnvParameter{
+				{Name: "lower", Type: object.OBJ_TYPE_REAL},
+				{Name: "upper", Type: object.OBJ_TYPE_REAL},
+			},
+			ReturnType: object.OBJ_TYPE_REAL,
+			Body:       cmdRealRand,
+		},
+		"real/sqrt": {
+			EvaluateArgs: true,
+			Parameters: []env.EnvParameter{
+				{Name: "value", Type: object.OBJ_TYPE_REAL},
+			},
+			ReturnType: object.OBJ_TYPE_REAL,
+			Body:       cmdRealSqrt,
+		},
+		"real/exp": {
+			EvaluateArgs: true,
+			Parameters: []env.EnvParameter{
+				{Name: "value", Type: object.OBJ_TYPE_REAL},
+			},
+			ReturnType: object.OBJ_TYPE_REAL,
+			Body:       cmdRealExp,
+		},
+		"real/log": {
+			EvaluateArgs: true,
+			Parameters: []env.EnvParameter{
+				{Name: "value", Type: object.OBJ_TYPE_REAL},
+			},
+			ReturnType: object.OBJ_TYPE_REAL,
+			Body:       cmdRealLog,
+		},
+		"real/ceil": {
+			EvaluateArgs: true,
+			Parameters: []env.EnvParameter{
+				{Name: "value", Type: object.OBJ_TYPE_REAL},
+			},
+			ReturnType: object.OBJ_TYPE_INTEGER,
+			Body:       cmdRealCeil,
+		},
+		"real/round": {
+			EvaluateArgs: true,
+			Parameters: []env.EnvParameter{
+				{Name: "value", Type: object.OBJ_TYPE_REAL},
+			},
+			ReturnType: object.OBJ_TYPE_INTEGER,
+			Body:       cmdRealRound,
+		},
+		"real/is-nan": {
+			EvaluateArgs: true,
+			Parameters: []env.EnvParameter{
+				{Name: "value", Type: object.OBJ_TYPE_REAL},
+			},
+			ReturnType: object.OBJ_TYPE_INTEGER,
+			Body:       cmdRealIsNaN,
+		},
+		"real/is-inf": {
+			EvaluateArgs: true,
+			Parameters: []env.EnvParameter{
+				{Name: "value", Type: object.OBJ_TYPE_REAL},
+			},
+			ReturnType: object.OBJ_TYPE_INTEGER,
+			Body:       cmdRealIsInf,
+		},
+		"real/is-finite": {
+			EvaluateArgs: true,
+			Parameters: []env.EnvParameter{
+				{Name: "value", Type: object.OBJ_TYPE_REAL},
+			},
+			ReturnType: object.OBJ_TYPE_INTEGER,
+			Body:       cmdRealIsFinite,
+		},
+		"int/abs": {
+			EvaluateArgs: true,
+			Parameters: []env.EnvParameter{
+				{Name: "value", Type: object.OBJ_TYPE_INTEGER},
+			},
+			ReturnType: object.OBJ_TYPE_INTEGER,
+			Body:       cmdIntAbs,
+		},
+		"real/abs": {
+			EvaluateArgs: true,
+			Parameters: []env.EnvParameter{
+				{Name: "value", Type: object.OBJ_TYPE_REAL},
+			},
+			ReturnType: object.OBJ_TYPE_REAL,
+			Body:       cmdRealAbs,
 		},
 	}
 }
@@ -507,4 +606,139 @@ func cmdRealLte(ctx env.EvaluationContext, args object.List) (object.Obj, error)
 		return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: object.Integer(1)}, nil
 	}
 	return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: object.Integer(0)}, nil
+}
+
+func cmdIntRand(ctx env.EvaluationContext, args object.List) (object.Obj, error) {
+	lower := args[0].D.(object.Integer)
+	upper := args[1].D.(object.Integer)
+	if lower > upper {
+		return object.Obj{
+			Type: object.OBJ_TYPE_ERROR,
+			D: object.Error{
+				Position: 0,
+				Message:  "int/rand: lower bound must be less than or equal to upper bound",
+			},
+		}, nil
+	}
+	if lower == upper {
+		return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: lower}, nil
+	}
+	rangeSize := upper - lower + 1
+	result := lower + object.Integer(rand.IntN(int(rangeSize)))
+	return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: result}, nil
+}
+
+func cmdRealRand(ctx env.EvaluationContext, args object.List) (object.Obj, error) {
+	lower := args[0].D.(object.Real)
+	upper := args[1].D.(object.Real)
+	if lower > upper {
+		return object.Obj{
+			Type: object.OBJ_TYPE_ERROR,
+			D: object.Error{
+				Position: 0,
+				Message:  "real/rand: lower bound must be less than or equal to upper bound",
+			},
+		}, nil
+	}
+	if lower == upper {
+		return object.Obj{Type: object.OBJ_TYPE_REAL, D: lower}, nil
+	}
+	rangeSize := upper - lower
+	result := lower + object.Real(rand.Float64())*rangeSize
+	return object.Obj{Type: object.OBJ_TYPE_REAL, D: result}, nil
+}
+
+func cmdRealSqrt(ctx env.EvaluationContext, args object.List) (object.Obj, error) {
+	value := args[0].D.(object.Real)
+	if value < 0.0 {
+		return object.Obj{
+			Type: object.OBJ_TYPE_ERROR,
+			D: object.Error{
+				Position: 0,
+				Message:  "real/sqrt: cannot compute square root of negative number",
+			},
+		}, nil
+	}
+	result := math.Sqrt(float64(value))
+	return object.Obj{Type: object.OBJ_TYPE_REAL, D: object.Real(result)}, nil
+}
+
+func cmdRealExp(ctx env.EvaluationContext, args object.List) (object.Obj, error) {
+	value := args[0].D.(object.Real)
+	result := math.Exp(float64(value))
+	if math.IsInf(result, 0) {
+		return object.Obj{
+			Type: object.OBJ_TYPE_ERROR,
+			D: object.Error{
+				Position: 0,
+				Message:  "real/exp: result overflow (infinity)",
+			},
+		}, nil
+	}
+	return object.Obj{Type: object.OBJ_TYPE_REAL, D: object.Real(result)}, nil
+}
+
+func cmdRealLog(ctx env.EvaluationContext, args object.List) (object.Obj, error) {
+	value := args[0].D.(object.Real)
+	if value <= 0.0 {
+		return object.Obj{
+			Type: object.OBJ_TYPE_ERROR,
+			D: object.Error{
+				Position: 0,
+				Message:  "real/log: logarithm undefined for non-positive numbers",
+			},
+		}, nil
+	}
+	result := math.Log(float64(value))
+	return object.Obj{Type: object.OBJ_TYPE_REAL, D: object.Real(result)}, nil
+}
+
+func cmdRealCeil(ctx env.EvaluationContext, args object.List) (object.Obj, error) {
+	value := args[0].D.(object.Real)
+	ceiled := math.Ceil(float64(value))
+	return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: object.Integer(ceiled)}, nil
+}
+
+func cmdRealRound(ctx env.EvaluationContext, args object.List) (object.Obj, error) {
+	value := args[0].D.(object.Real)
+	rounded := math.Round(float64(value))
+	return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: object.Integer(rounded)}, nil
+}
+
+func cmdRealIsNaN(ctx env.EvaluationContext, args object.List) (object.Obj, error) {
+	value := args[0].D.(object.Real)
+	if math.IsNaN(float64(value)) {
+		return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: object.Integer(1)}, nil
+	}
+	return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: object.Integer(0)}, nil
+}
+
+func cmdRealIsInf(ctx env.EvaluationContext, args object.List) (object.Obj, error) {
+	value := args[0].D.(object.Real)
+	if math.IsInf(float64(value), 0) {
+		return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: object.Integer(1)}, nil
+	}
+	return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: object.Integer(0)}, nil
+}
+
+func cmdRealIsFinite(ctx env.EvaluationContext, args object.List) (object.Obj, error) {
+	value := args[0].D.(object.Real)
+	if !math.IsNaN(float64(value)) && !math.IsInf(float64(value), 0) {
+		return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: object.Integer(1)}, nil
+	}
+	return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: object.Integer(0)}, nil
+}
+
+func cmdIntAbs(ctx env.EvaluationContext, args object.List) (object.Obj, error) {
+	value := args[0].D.(object.Integer)
+	if value < 0 {
+		return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: -value}, nil
+	}
+	return object.Obj{Type: object.OBJ_TYPE_INTEGER, D: value}, nil
+}
+
+func cmdRealAbs(ctx env.EvaluationContext, args object.List) (object.Obj, error) {
+	value := args[0].D.(object.Real)
+	result := math.Abs(float64(value))
+	return object.Obj{Type: object.OBJ_TYPE_REAL, D: object.Real(result)}, nil
 }

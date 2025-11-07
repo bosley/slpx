@@ -724,6 +724,497 @@
 
 (putln "Boundary and precision cases passed")
 
+(set test_int_rand_in_range (fn () :I
+    (set r (int/rand 1 10))
+    (int/eq
+        (int/eq (int/gte r 1) 1)
+        (int/eq (int/lte r 10) 1))))
+(ASSERT_TRUE (test_int_rand_in_range) "int/rand: result should be in range [1, 10]")
+
+(set test_int_rand_equal_bounds (fn () :I
+    (int/eq (int/rand 42 42) 42)))
+(ASSERT_TRUE (test_int_rand_equal_bounds) "int/rand: equal bounds should return bound value")
+
+(set test_int_rand_negative_range (fn () :I
+    (set r (int/rand -10 -5))
+    (int/eq
+        (int/eq (int/gte r -10) 1)
+        (int/eq (int/lte r -5) 1))))
+(ASSERT_TRUE (test_int_rand_negative_range) "int/rand: should handle negative range [-10, -5]")
+
+(set test_int_rand_across_zero (fn () :I
+    (set r (int/rand -5 5))
+    (int/eq
+        (int/eq (int/gte r -5) 1)
+        (int/eq (int/lte r 5) 1))))
+(ASSERT_TRUE (test_int_rand_across_zero) "int/rand: should handle range across zero [-5, 5]")
+
+(set test_int_rand_invalid_bounds (fn () :I
+    (try
+        (do
+            (int/rand 10 5)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_rand_invalid_bounds) "int/rand: should error when lower > upper")
+
+(set test_int_rand_large_range (fn () :I
+    (set r (int/rand 1 1000))
+    (int/eq
+        (int/eq (int/gte r 1) 1)
+        (int/eq (int/lte r 1000) 1))))
+(ASSERT_TRUE (test_int_rand_large_range) "int/rand: should handle large range [1, 1000]")
+
+(set test_int_rand_with_variables (fn () :I
+    (set lower 42)
+    (set upper 100)
+    (set r (int/rand lower upper))
+    (int/eq
+        (int/eq (int/gte r 42) 1)
+        (int/eq (int/lte r 100) 1))))
+(ASSERT_TRUE (test_int_rand_with_variables) "int/rand: should work with variable bounds")
+
+(putln "int/rand passed")
+
+(set test_real_rand_in_range (fn () :I
+    (set r (real/rand 0.0 1.0))
+    (int/eq
+        (int/eq (real/gte r 0.0) 1)
+        (int/eq (real/lt r 1.0) 1))))
+(ASSERT_TRUE (test_real_rand_in_range) "real/rand: result should be in range [0.0, 1.0)")
+
+(set test_real_rand_equal_bounds (fn () :I
+    (real/eq (real/rand 3.14 3.14) 3.14)))
+(ASSERT_TRUE (test_real_rand_equal_bounds) "real/rand: equal bounds should return bound value")
+
+(set test_real_rand_negative_range (fn () :I
+    (set r (real/rand -10.5 -5.5))
+    (int/eq
+        (int/eq (real/gte r -10.5) 1)
+        (int/eq (real/lte r -5.5) 1))))
+(ASSERT_TRUE (test_real_rand_negative_range) "real/rand: should handle negative range [-10.5, -5.5]")
+
+(set test_real_rand_across_zero (fn () :I
+    (set r (real/rand -5.5 5.5))
+    (int/eq
+        (int/eq (real/gte r -5.5) 1)
+        (int/eq (real/lte r 5.5) 1))))
+(ASSERT_TRUE (test_real_rand_across_zero) "real/rand: should handle range across zero [-5.5, 5.5]")
+
+(set test_real_rand_invalid_bounds (fn () :I
+    (try
+        (do
+            (real/rand 10.0 5.0)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_rand_invalid_bounds) "real/rand: should error when lower > upper")
+
+(set test_real_rand_large_range (fn () :I
+    (set r (real/rand 1.0 1000.0))
+    (int/eq
+        (int/eq (real/gte r 1.0) 1)
+        (int/eq (real/lte r 1000.0) 1))))
+(ASSERT_TRUE (test_real_rand_large_range) "real/rand: should handle large range [1.0, 1000.0]")
+
+(set test_real_rand_with_variables (fn () :I
+    (set real_lower 3.33)
+    (set real_upper 100.0)
+    (set r (real/rand real_lower real_upper))
+    (int/eq
+        (int/eq (real/gte r 3.33) 1)
+        (int/eq (real/lte r 100.0) 1))))
+(ASSERT_TRUE (test_real_rand_with_variables) "real/rand: should work with variable bounds")
+
+(set test_real_rand_small_range (fn () :I
+    (set r (real/rand 5.0 5.01))
+    (int/eq
+        (int/eq (real/gte r 5.0) 1)
+        (int/eq (real/lt r 5.01) 1))))
+(ASSERT_TRUE (test_real_rand_small_range) "real/rand: should handle small range [5.0, 5.01)")
+
+(putln "real/rand passed")
+
+(set test_int_rand_wrong_type (fn () :I
+    (try
+        (do
+            (int/rand "1" 10)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_rand_wrong_type) "int/rand: should reject string argument")
+
+(set test_int_rand_real_arg (fn () :I
+    (try
+        (do
+            (int/rand 1 10.5)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_rand_real_arg) "int/rand: should reject real argument")
+
+(set test_int_rand_mixed_types (fn () :I
+    (try
+        (do
+            (int/rand 1.5 10)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_rand_mixed_types) "int/rand: should reject mixed types")
+
+(set test_real_rand_wrong_type (fn () :I
+    (try
+        (do
+            (real/rand "1.0" 10.0)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_rand_wrong_type) "real/rand: should reject string argument")
+
+(set test_real_rand_int_arg (fn () :I
+    (try
+        (do
+            (real/rand 1 10.0)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_rand_int_arg) "real/rand: should reject integer argument")
+
+(set test_real_rand_mixed_types (fn () :I
+    (try
+        (do
+            (real/rand 1.0 10)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_rand_mixed_types) "real/rand: should reject mixed types")
+
+(putln "Random number type errors passed")
+
+(set test_real_sqrt_basic (fn () :I
+    (real/eq (real/sqrt 4.0) 2.0)))
+(ASSERT_TRUE (test_real_sqrt_basic) "real/sqrt: sqrt(4.0) should equal 2.0")
+
+(set test_real_sqrt_zero (fn () :I
+    (real/eq (real/sqrt 0.0) 0.0)))
+(ASSERT_TRUE (test_real_sqrt_zero) "real/sqrt: sqrt(0.0) should equal 0.0")
+
+(set test_real_sqrt_large (fn () :I
+    (real/eq (real/sqrt 100.0) 10.0)))
+(ASSERT_TRUE (test_real_sqrt_large) "real/sqrt: sqrt(100.0) should equal 10.0")
+
+(set test_real_sqrt_fractional (fn () :I
+    (real/gt (real/sqrt 2.0) 1.4)))
+(ASSERT_TRUE (test_real_sqrt_fractional) "real/sqrt: sqrt(2.0) should be greater than 1.4")
+
+(set test_real_sqrt_negative_error (fn () :I
+    (try
+        (do
+            (real/sqrt -1.0)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_sqrt_negative_error) "real/sqrt: should error on negative input")
+
+(putln "real/sqrt passed")
+
+(set test_real_exp_zero (fn () :I
+    (real/eq (real/exp 0.0) 1.0)))
+(ASSERT_TRUE (test_real_exp_zero) "real/exp: exp(0) should equal 1.0")
+
+(set test_real_exp_one (fn () :I
+    (real/gt (real/exp 1.0) 2.7)))
+(ASSERT_TRUE (test_real_exp_one) "real/exp: exp(1) should be greater than 2.7")
+
+(set test_real_exp_negative (fn () :I
+    (real/lt (real/exp -1.0) 0.4)))
+(ASSERT_TRUE (test_real_exp_negative) "real/exp: exp(-1) should be less than 0.4")
+
+(set test_real_exp_small (fn () :I
+    (real/gt (real/exp 2.0) 7.0)))
+(ASSERT_TRUE (test_real_exp_small) "real/exp: exp(2) should be greater than 7.0")
+
+(set test_real_exp_overflow (fn () :I
+    (try
+        (do
+            (real/exp 1000.0)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_exp_overflow) "real/exp: should error on overflow")
+
+(putln "real/exp passed")
+
+(set test_real_log_one (fn () :I
+    (real/eq (real/log 1.0) 0.0)))
+(ASSERT_TRUE (test_real_log_one) "real/log: log(1) should equal 0.0")
+
+(set test_real_log_e (fn () :I
+    (real/gt (real/log 2.718281828459045) 0.99)))
+(ASSERT_TRUE (test_real_log_e) "real/log: log(e) should be approximately 1.0")
+
+(set test_real_log_large (fn () :I
+    (real/gt (real/log 10.0) 2.3)))
+(ASSERT_TRUE (test_real_log_large) "real/log: log(10) should be greater than 2.3")
+
+(set test_real_log_small (fn () :I
+    (real/lt (real/log 0.5) 0.0)))
+(ASSERT_TRUE (test_real_log_small) "real/log: log(0.5) should be negative")
+
+(set test_real_log_zero_error (fn () :I
+    (try
+        (do
+            (real/log 0.0)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_log_zero_error) "real/log: should error on zero input")
+
+(set test_real_log_negative_error (fn () :I
+    (try
+        (do
+            (real/log -1.0)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_log_negative_error) "real/log: should error on negative input")
+
+(putln "real/log passed")
+
+(set test_real_ceil_positive (fn () :I
+    (int/eq (real/ceil 3.14) 4)))
+(ASSERT_TRUE (test_real_ceil_positive) "real/ceil: ceil(3.14) should equal 4")
+
+(set test_real_ceil_negative (fn () :I
+    (int/eq (real/ceil -3.14) -3)))
+(ASSERT_TRUE (test_real_ceil_negative) "real/ceil: ceil(-3.14) should equal -3")
+
+(set test_real_ceil_exact (fn () :I
+    (int/eq (real/ceil 5.0) 5)))
+(ASSERT_TRUE (test_real_ceil_exact) "real/ceil: ceil(5.0) should equal 5")
+
+(set test_real_ceil_zero (fn () :I
+    (int/eq (real/ceil 0.0) 0)))
+(ASSERT_TRUE (test_real_ceil_zero) "real/ceil: ceil(0.0) should equal 0")
+
+(set test_real_ceil_small_positive (fn () :I
+    (int/eq (real/ceil 0.001) 1)))
+(ASSERT_TRUE (test_real_ceil_small_positive) "real/ceil: ceil(0.001) should equal 1")
+
+(set test_real_ceil_small_negative (fn () :I
+    (int/eq (real/ceil -0.001) 0)))
+(ASSERT_TRUE (test_real_ceil_small_negative) "real/ceil: ceil(-0.001) should equal 0")
+
+(putln "real/ceil passed")
+
+(set test_real_round_up (fn () :I
+    (int/eq (real/round 3.5) 4)))
+(ASSERT_TRUE (test_real_round_up) "real/round: round(3.5) should equal 4")
+
+(set test_real_round_down (fn () :I
+    (int/eq (real/round 3.4) 3)))
+(ASSERT_TRUE (test_real_round_down) "real/round: round(3.4) should equal 3")
+
+(set test_real_round_negative_up (fn () :I
+    (int/eq (real/round -3.5) -4)))
+(ASSERT_TRUE (test_real_round_negative_up) "real/round: round(-3.5) should equal -4")
+
+(set test_real_round_negative_down (fn () :I
+    (int/eq (real/round -3.4) -3)))
+(ASSERT_TRUE (test_real_round_negative_down) "real/round: round(-3.4) should equal -3")
+
+(set test_real_round_exact (fn () :I
+    (int/eq (real/round 5.0) 5)))
+(ASSERT_TRUE (test_real_round_exact) "real/round: round(5.0) should equal 5")
+
+(set test_real_round_zero (fn () :I
+    (int/eq (real/round 0.0) 0)))
+(ASSERT_TRUE (test_real_round_zero) "real/round: round(0.0) should equal 0")
+
+(putln "real/round passed")
+
+(set test_real_is_nan_normal (fn () :I
+    (int/eq (real/is-nan 3.14) 0)))
+(ASSERT_TRUE (test_real_is_nan_normal) "real/is-nan: normal number should return 0")
+
+(set test_real_is_nan_zero (fn () :I
+    (int/eq (real/is-nan 0.0) 0)))
+(ASSERT_TRUE (test_real_is_nan_zero) "real/is-nan: zero should return 0")
+
+(putln "real/is-nan passed")
+
+(set test_real_is_inf_normal (fn () :I
+    (int/eq (real/is-inf 3.14) 0)))
+(ASSERT_TRUE (test_real_is_inf_normal) "real/is-inf: normal number should return 0")
+
+(set test_real_is_inf_zero (fn () :I
+    (int/eq (real/is-inf 0.0) 0)))
+(ASSERT_TRUE (test_real_is_inf_zero) "real/is-inf: zero should return 0")
+
+(set test_real_is_inf_large (fn () :I
+    (int/eq (real/is-inf 999999999.0) 0)))
+(ASSERT_TRUE (test_real_is_inf_large) "real/is-inf: large finite number should return 0")
+
+(putln "real/is-inf passed")
+
+(set test_real_is_finite_normal (fn () :I
+    (int/eq (real/is-finite 3.14) 1)))
+(ASSERT_TRUE (test_real_is_finite_normal) "real/is-finite: normal number should return 1")
+
+(set test_real_is_finite_zero (fn () :I
+    (int/eq (real/is-finite 0.0) 1)))
+(ASSERT_TRUE (test_real_is_finite_zero) "real/is-finite: zero should return 1")
+
+(set test_real_is_finite_negative (fn () :I
+    (int/eq (real/is-finite -42.5) 1)))
+(ASSERT_TRUE (test_real_is_finite_negative) "real/is-finite: negative number should return 1")
+
+(set test_real_is_finite_large (fn () :I
+    (int/eq (real/is-finite 999999999.0) 1)))
+(ASSERT_TRUE (test_real_is_finite_large) "real/is-finite: large number should return 1")
+
+(putln "real/is-finite passed")
+
+(set test_int_abs_positive (fn () :I
+    (int/eq (int/abs 42) 42)))
+(ASSERT_TRUE (test_int_abs_positive) "int/abs: abs(42) should equal 42")
+
+(set test_int_abs_negative (fn () :I
+    (int/eq (int/abs -42) 42)))
+(ASSERT_TRUE (test_int_abs_negative) "int/abs: abs(-42) should equal 42")
+
+(set test_int_abs_zero (fn () :I
+    (int/eq (int/abs 0) 0)))
+(ASSERT_TRUE (test_int_abs_zero) "int/abs: abs(0) should equal 0")
+
+(set test_int_abs_large_negative (fn () :I
+    (int/eq (int/abs -999999) 999999)))
+(ASSERT_TRUE (test_int_abs_large_negative) "int/abs: abs(-999999) should equal 999999")
+
+(putln "int/abs passed")
+
+(set test_real_abs_positive (fn () :I
+    (real/eq (real/abs 3.14) 3.14)))
+(ASSERT_TRUE (test_real_abs_positive) "real/abs: abs(3.14) should equal 3.14")
+
+(set test_real_abs_negative (fn () :I
+    (real/eq (real/abs -3.14) 3.14)))
+(ASSERT_TRUE (test_real_abs_negative) "real/abs: abs(-3.14) should equal 3.14")
+
+(set test_real_abs_zero (fn () :I
+    (real/eq (real/abs 0.0) 0.0)))
+(ASSERT_TRUE (test_real_abs_zero) "real/abs: abs(0.0) should equal 0.0")
+
+(set test_real_abs_large_negative (fn () :I
+    (real/eq (real/abs -999.999) 999.999)))
+(ASSERT_TRUE (test_real_abs_large_negative) "real/abs: abs(-999.999) should equal 999.999")
+
+(putln "real/abs passed")
+
+(set test_sqrt_abs_chain (fn () :I
+    (real/eq (real/sqrt (real/abs -16.0)) 4.0)))
+(ASSERT_TRUE (test_sqrt_abs_chain) "chaining: sqrt(abs(-16)) should equal 4.0")
+
+(set test_exp_log_inverse (fn () :I
+    (real/gt (real/exp (real/log 10.0)) 9.99)))
+(ASSERT_TRUE (test_exp_log_inverse) "chaining: exp(log(10)) should approximately equal 10")
+
+(set test_round_sqrt (fn () :I
+    (int/eq (real/round (real/sqrt 50.0)) 7)))
+(ASSERT_TRUE (test_round_sqrt) "chaining: round(sqrt(50)) should equal 7")
+
+(set test_abs_ceil_sub (fn () :I
+    (int/eq (int/abs (int/sub (real/ceil 3.7) (real/round 8.5))) 5)))
+(ASSERT_TRUE (test_abs_ceil_sub) "chaining: abs(ceil(3.7) - round(8.5)) should equal 5")
+
+(putln "Advanced function chaining passed")
+
+(set test_real_sqrt_wrong_type (fn () :I
+    (try
+        (do
+            (real/sqrt 4)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_sqrt_wrong_type) "real/sqrt: should reject integer argument")
+
+(set test_real_sqrt_string (fn () :I
+    (try
+        (do
+            (real/sqrt "4.0")
+            0)
+        1)))
+(ASSERT_TRUE (test_real_sqrt_string) "real/sqrt: should reject string argument")
+
+(set test_real_exp_wrong_type (fn () :I
+    (try
+        (do
+            (real/exp 1)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_exp_wrong_type) "real/exp: should reject integer argument")
+
+(set test_real_log_wrong_type (fn () :I
+    (try
+        (do
+            (real/log 10)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_log_wrong_type) "real/log: should reject integer argument")
+
+(set test_real_ceil_wrong_type (fn () :I
+    (try
+        (do
+            (real/ceil 3)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_ceil_wrong_type) "real/ceil: should reject integer argument")
+
+(set test_real_round_wrong_type (fn () :I
+    (try
+        (do
+            (real/round 3)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_round_wrong_type) "real/round: should reject integer argument")
+
+(set test_real_is_nan_wrong_type (fn () :I
+    (try
+        (do
+            (real/is-nan 3)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_is_nan_wrong_type) "real/is-nan: should reject integer argument")
+
+(set test_real_is_inf_wrong_type (fn () :I
+    (try
+        (do
+            (real/is-inf 3)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_is_inf_wrong_type) "real/is-inf: should reject integer argument")
+
+(set test_real_is_finite_wrong_type (fn () :I
+    (try
+        (do
+            (real/is-finite 3)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_is_finite_wrong_type) "real/is-finite: should reject integer argument")
+
+(set test_int_abs_wrong_type (fn () :I
+    (try
+        (do
+            (int/abs 42.0)
+            0)
+        1)))
+(ASSERT_TRUE (test_int_abs_wrong_type) "int/abs: should reject real argument")
+
+(set test_int_abs_string (fn () :I
+    (try
+        (do
+            (int/abs "42")
+            0)
+        1)))
+(ASSERT_TRUE (test_int_abs_string) "int/abs: should reject string argument")
+
+(set test_real_abs_wrong_type (fn () :I
+    (try
+        (do
+            (real/abs 42)
+            0)
+        1)))
+(ASSERT_TRUE (test_real_abs_wrong_type) "real/abs: should reject integer argument")
+
+(putln "Advanced function type errors passed")
+
 (putln "")
 (putln "=================================")
 (putln "ALL NUMBERS TESTS PASSED")
@@ -735,10 +1226,16 @@
 (putln "  - Type conversions (2 functions)")
 (putln "  - Integer comparisons (5 functions)")
 (putln "  - Real comparisons (5 functions)")
-(putln "  - Complex expressions")
-(putln "  - Type mismatch errors (32 cases)")
+(putln "  - Random number generation (2 functions)")
+(putln "  - Advanced math functions (5 functions)")
+(putln "  - Real number inspection (3 functions)")
+(putln "  - Absolute value (2 functions)")
+(putln "  - Complex expressions and function chaining")
+(putln "  - Type mismatch errors (50 cases)")
 (putln "  - Division/modulo by zero errors")
 (putln "  - Negative exponent errors")
+(putln "  - Random bound validation errors")
+(putln "  - Advanced math domain errors (sqrt, log, exp)")
 (putln "  - Edge cases (zero, negative, boundaries)")
 (putln "  - Precision and overflow cases")
 (putln "")
