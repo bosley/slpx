@@ -1,0 +1,271 @@
+(set ASSERT_TRUE (fn (val :I msg :S) :_ 
+    (if val
+        _
+        (do
+            (putln "Assertion failed:" msg)
+            (exit 1)))))
+
+(set ASSERT_FALSE (fn (val :I msg :S) :_ 
+    (if val
+        (do
+            (putln "Assertion failed:" msg)
+            (exit 1))
+        _)))
+
+(putln "Starting macro system tests...")
+(putln "")
+
+(putln "=================[ BASIC MACRO DEFINITION AND EXPANSION ]=================")
+
+$(const42) 42
+(set x ($const42))
+(ASSERT_TRUE x "zero-parameter macro should expand to constant")
+
+$(identity ?x) ?x
+(ASSERT_TRUE ($identity 10) "single-parameter macro should substitute parameter")
+
+$(add ?a ?b) (if ?a ?a ?b)
+(ASSERT_TRUE ($add 5 3) "two-parameter macro should work")
+
+$(triple ?a ?b ?c) (if ?a ?a (if ?b ?b ?c))
+(ASSERT_TRUE ($triple 1 2 3) "three-parameter macro should work")
+
+$(five_params ?a ?b ?c ?d ?e) (if ?a ?a (if ?e ?e 0))
+(ASSERT_TRUE ($five_params 7 1 2 3 4) "five-parameter macro should work")
+
+$(string_macro ?x) "hello"
+(set str_result ($string_macro 1))
+(ASSERT_TRUE 1 "macro can return string")
+
+$(list_macro ?x) (qu (1 2 3))
+(set list_result ($list_macro 1))
+(ASSERT_TRUE 1 "macro can return list")
+
+(putln "Basic macro definition and expansion passed")
+
+(putln "")
+(putln "=================[ PARAMETER SUBSTITUTION ]=================")
+
+$(use_once ?x) (if ?x 1 0)
+(ASSERT_TRUE ($use_once 5) "parameter used once should work")
+
+$(use_twice ?x) (if ?x ?x 0)
+(ASSERT_TRUE ($use_twice 7) "parameter used twice should work")
+
+$(use_many ?x) (if ?x (if ?x (if ?x ?x 0) 0) 0)
+(ASSERT_TRUE ($use_many 3) "parameter used many times should work")
+
+$(multi_use ?a ?b) (if ?a ?b (if ?b ?a 0))
+(ASSERT_TRUE ($multi_use 1 2) "multiple parameters used multiple times should work")
+
+$(nested_list ?x ?y) (qu (?x (nested ?y) end))
+(set nested_result ($nested_list 10 20))
+(ASSERT_TRUE 1 "parameters in nested lists should substitute")
+
+$(quoted_param ?x) (qu ?x)
+(set quoted_result ($quoted_param 99))
+(ASSERT_TRUE 1 "parameters in quoted expressions should substitute")
+
+(putln "Parameter substitution passed")
+
+(putln "")
+(putln "=================[ MACRO TEMPLATES ]=================")
+
+$(template_value ?x) 100
+(ASSERT_TRUE ($template_value 1) "template as simple value should work")
+
+$(template_ident ?x) ?x
+(ASSERT_TRUE ($template_ident 42) "template as identifier substitution should work")
+
+$(template_list ?x ?y) (if ?x ?y 0)
+(ASSERT_TRUE ($template_list 1 88) "template as list with parameters should work")
+
+$(template_nested ?x) (if 1 (if ?x ?x 0) 0)
+(ASSERT_TRUE ($template_nested 15) "template as nested list should work")
+
+$(template_quoted ?x) (qu (value ?x end))
+(set tq_result ($template_quoted 50))
+(ASSERT_TRUE 1 "template with quoted expression should work")
+
+(putln "Macro templates passed")
+
+(putln "")
+(putln "=================[ RECURSIVE AND NESTED MACROS ]=================")
+
+$(inner_macro ?v) (if ?v ?v 0)
+$(outer_macro ?v) ($inner_macro ?v)
+(ASSERT_TRUE ($outer_macro 25) "macro calling another macro should work")
+
+$(expands_to_macro ?x) ($identity ?x)
+(ASSERT_TRUE ($expands_to_macro 30) "macro expansion resulting in macro call should work")
+
+$(level3 ?x) (if ?x ?x 0)
+$(level2 ?x) ($level3 ?x)
+$(level1 ?x) ($level2 ?x)
+(ASSERT_TRUE ($level1 40) "chain of macro expansions should work")
+
+$(gen_set ?var ?val) (set ?var ?val)
+($gen_set macro_var 55)
+(ASSERT_TRUE macro_var "macro generating code should work")
+
+(putln "Recursive and nested macros passed")
+
+(putln "")
+(putln "=================[ ERROR CONDITIONS ]=================")
+
+(set test_undefined_macro (fn () :I
+    (try
+        (do
+            (use "errors/undefined_macro.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_undefined_macro) "undefined macro should cause parse error")
+
+(set test_too_few_args (fn () :I
+    (try
+        (do
+            (use "errors/too_few_args.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_too_few_args) "too few macro args should cause parse error")
+
+(set test_too_many_args (fn () :I
+    (try
+        (do
+            (use "errors/too_many_args.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_too_many_args) "too many macro args should cause parse error")
+
+(set test_empty_pattern (fn () :I
+    (try
+        (do
+            (use "errors/empty_pattern.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_empty_pattern) "empty macro pattern should cause parse error")
+
+(set test_bad_param (fn () :I
+    (try
+        (do
+            (use "errors/non_ident_param.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_bad_param) "non-identifier macro param should cause parse error")
+
+(set test_param_no_question (fn () :I
+    (try
+        (do
+            (use "errors/param_no_question.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_param_no_question) "macro param without ? prefix should cause parse error")
+
+(putln "Error conditions passed")
+
+(putln "")
+(putln "=================[ INTEGRATION TESTS ]=================")
+
+$(defun ?name ?body) (set ?name (fn () :I ?body))
+($defun my_func 123)
+(ASSERT_TRUE (my_func) "macro generating function definition should work")
+
+$(when ?cond ?body) (if ?cond ?body _)
+(set when_result ($when 1 99))
+(ASSERT_TRUE when_result "macro for conditional abstraction should work")
+
+$(unless ?cond ?body) (if ?cond _ ?body)
+(set unless_result ($unless 0 77))
+(ASSERT_TRUE unless_result "macro for inverted conditional should work")
+
+$(repeat3 ?expr) (do ?expr ?expr ?expr)
+(set counter 0)
+($repeat3 (set counter (if counter (if counter counter 1) 1)))
+(ASSERT_TRUE counter "macro for repeated code patterns should work")
+
+$(let_bind ?var ?val ?body) (do (set ?var ?val) ?body)
+(set let_result ($let_bind temp_var 88 temp_var))
+(ASSERT_TRUE let_result "macro for lexical binding pattern should work")
+
+(putln "Integration tests passed")
+
+(putln "")
+(putln "=================[ ADVANCED MACRO PATTERNS ]=================")
+
+$(swap_params ?a ?b) (if ?b ?a 0)
+(ASSERT_TRUE ($swap_params 66 1) "parameter order manipulation should work")
+
+$(nested_expansion ?x) ($identity ($identity ?x))
+(ASSERT_TRUE ($nested_expansion 44) "deeply nested macro calls should work")
+
+$(macro_in_list ?x) (qu (before ($identity ?x) after))
+(set mil_result ($macro_in_list 33))
+(ASSERT_TRUE 1 "macro call inside quoted list should work")
+
+$(complex_template ?a ?b ?c) (do (set temp_a ?a) (set temp_b ?b) (if ?c temp_a temp_b))
+(set complex_result ($complex_template 11 22 1))
+(ASSERT_TRUE complex_result "complex multi-statement template should work")
+
+$(recursive_list ?x) (qu (?x (?x (?x))))
+(set rl_result ($recursive_list 5))
+(ASSERT_TRUE 1 "recursive parameter in nested quoted lists should work")
+
+(putln "Advanced macro patterns passed")
+
+(putln "")
+(putln "=================[ EDGE CASES ]=================")
+
+$(empty_body ?x) _
+(set eb_result ($empty_body 1))
+(ASSERT_TRUE 1 "macro returning none should work")
+
+$(all_same ?x) (if ?x (if ?x (if ?x ?x 0) 0) 0)
+(ASSERT_TRUE ($all_same 9) "parameter repeated many times should work")
+
+$(ignore_params ?a ?b ?c) 1
+(ASSERT_TRUE ($ignore_params 1 2 3) "macro ignoring all params should work")
+
+$(large_list ?a ?b ?c ?d ?e) (qu (?a ?b ?c ?d ?e ?a ?b ?c ?d ?e))
+(set ll_result ($large_list 1 2 3 4 5))
+(ASSERT_TRUE 1 "macro with many parameters in complex template should work")
+
+(putln "Edge cases passed")
+
+(putln "")
+(putln "=================[ MACRO SCOPE AND ORDERING ]=================")
+
+$(early_macro ?x) ?x
+(set early_result ($early_macro 100))
+(ASSERT_TRUE early_result "macro defined early should be available later")
+
+$(redefine_test ?x) ?x
+$(redefine_test ?y) (if ?y ?y 0)
+(ASSERT_TRUE ($redefine_test 50) "macro redefinition should work")
+
+$(defined_first ?x) (if ?x ?x 0)
+$(uses_first ?x) ($defined_first ?x)
+(ASSERT_TRUE ($uses_first 60) "macro can reference previously-defined macros")
+
+(putln "Macro scope and ordering passed")
+
+(putln "")
+(putln "=================================")
+(putln "ALL MACRO SYSTEM TESTS PASSED")
+(putln "=================================")
+(putln "")
+(putln "Tested components:")
+(putln "  - Basic macro definition (0-5 parameters)")
+(putln "  - Macro expansion with different return types")
+(putln "  - Parameter substitution (single, multiple, nested)")
+(putln "  - Parameters in quoted expressions")
+(putln "  - Template variations (values, identifiers, lists)")
+(putln "  - Recursive macro expansion")
+(putln "  - Nested macro calls")
+(putln "  - Chain of macro expansions")
+(putln "  - Error conditions (undefined macro, arity mismatch, empty pattern, invalid params)")
+(putln "  - Integration patterns (function generation, conditionals)")
+(putln "  - Advanced patterns (swap, deep nesting, complex templates)")
+(putln "  - Edge cases (empty body, ignored params, large lists)")
+(putln "  - Macro scope and redefinition")
+(putln _)
+

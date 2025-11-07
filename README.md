@@ -27,3 +27,10 @@ Use `..` as the parameter list to create variadic functions that accept any numb
 ```
 
 Built-in variadic functions like `putln`, `use`, `do`, `int/sum`, and `real/sum` require at least one argument.
+
+
+# Something to clarify in a document:
+
+We use `$error` as an injected identifer inside the body of the handler for `try` statements. After this handling, `$error` is not available. 
+
+The user can not define `$<IDENTIFIER>` as the `$` symbol

@@ -1,0 +1,138 @@
+(set ASSERT_TRUE (fn (val :I msg :S) :_ 
+    (if val
+        _
+        (do
+            (putln "Assertion failed:" msg)
+            (exit 1)))))
+
+(set ASSERT_FALSE (fn (val :I msg :S) :_ 
+    (if val
+        (do
+            (putln "Assertion failed:" msg)
+            (exit 1))
+        _)))
+
+(putln "Starting error display verification tests...")
+(putln "")
+
+(putln "=================[ RUNTIME ERROR VERIFICATION ]=================")
+
+(set test_basic (fn () :I
+    (try
+        (do
+            (use "basic.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_basic) "basic.slpx should error (wrong arg count to set)")
+
+(set test_argcount (fn () :I
+    (try
+        (do
+            (use "argcount.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_argcount) "argcount.slpx should error (insufficient args to int/add)")
+
+(set test_typeerror (fn () :I
+    (try
+        (do
+            (use "typeerror.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_typeerror) "typeerror.slpx should error (type mismatch in int/add)")
+
+(set test_undefined (fn () :I
+    (try
+        (do
+            (use "undefined.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_undefined) "undefined.slpx should error (undefined variable)")
+
+(set test_notfound (fn () :I
+    (try
+        (do
+            (use "notfound.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_notfound) "notfound.slpx should error (undefined function)")
+
+(set test_badcall (fn () :I
+    (try
+        (do
+            (use "badcall.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_badcall) "badcall.slpx should error (undefined function with args)")
+
+(set test_comprehensive (fn () :I
+    (try
+        (do
+            (use "comprehensive.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_comprehensive) "comprehensive.slpx should error (wrong arg count to user function)")
+
+(set test_multiline (fn () :I
+    (try
+        (do
+            (use "multiline.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_multiline) "multiline.slpx should error (type error in multiline)")
+
+(putln "Runtime error verification passed")
+
+(putln "")
+(putln "=================[ PARSE ERROR VERIFICATION ]=================")
+
+(set test_unclosed (fn () :I
+    (try
+        (do
+            (use "unclosed.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_unclosed) "unclosed.slpx should error (unclosed outer list)")
+
+(set test_nested_unclosed (fn () :I
+    (try
+        (do
+            (use "nested_unclosed.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_nested_unclosed) "nested_unclosed.slpx should error (unclosed inner list)")
+
+(set test_deep_unclosed (fn () :I
+    (try
+        (do
+            (use "deep_unclosed.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_deep_unclosed) "deep_unclosed.slpx should error (deeply nested unclosed list)")
+
+(set test_manual (fn () :I
+    (try
+        (do
+            (use "manual.slpx")
+            0)
+        1)))
+(ASSERT_TRUE (test_manual) "manual.slpx should error (manual error)")
+
+(putln "Parse error verification passed")
+
+(putln "")
+(putln "=================================")
+(putln "ALL ERROR DISPLAY TESTS PASSED")
+(putln "=================================")
+(putln "")
+(putln "Verified error types:")
+(putln "  - Wrong argument counts")
+(putln "  - Type mismatches")
+(putln "  - Undefined identifiers")
+(putln "  - Undefined functions")
+(putln "  - Parse errors (unclosed lists)")
+(putln "  - Nested parse errors")
+(putln "  - Multiline error reporting")
+(putln "  - Manual error reporting")
+(putln _)
+

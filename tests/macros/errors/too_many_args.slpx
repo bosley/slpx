@@ -1,0 +1,3 @@
+$(needs_one ?a) ?a
+($needs_one 1 2 3)
+

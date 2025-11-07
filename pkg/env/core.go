@@ -145,6 +145,10 @@ func cmdSet(ctx EvaluationContext, args object.List) (object.Obj, error) {
 
 	name := args[0].D.(object.Identifier)
 
+	if len(name) > 0 && name[0] == '$' {
+		return evalCtx.makeErrorFromObj(args[0], "set: identifiers starting with $ are reserved for system use"), nil
+	}
+
 	value, err := ctx.Evaluate(args[1])
 	if err != nil {
 		return object.Obj{}, err
