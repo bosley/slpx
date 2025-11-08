@@ -3,6 +3,7 @@ package rt
 import (
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -150,7 +151,8 @@ func (r *runtimeImpl) NewActiveContext(displayName string) (ActiveContext, error
 
 	repl := repl.NewSessionBuilder(r.logger).WithFS(fs).WithIO(io).WithMEM(mem).Build(r.launchDirectory)
 
-	configuration, err := slpxcfg.LoadFromContent(r.logger, r.launchDirectory, r.setupContent, 10*time.Second, []slpxcfg.Variable{
+	initFilePath := filepath.Join(r.slpxHome, "init.slpx")
+	configuration, err := slpxcfg.LoadFromContent(r.logger, initFilePath, r.setupContent, 10*time.Second, []slpxcfg.Variable{
 		{Identifier: "cmd_toggle_editor", Type: object.OBJ_TYPE_STRING, Required: true},
 		{Identifier: "cmd_toggle_output", Type: object.OBJ_TYPE_STRING, Required: true},
 		{Identifier: "cmd_clear", Type: object.OBJ_TYPE_STRING, Required: true},

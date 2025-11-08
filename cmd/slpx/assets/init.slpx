@@ -1,19 +1,7 @@
-; This default file sets up configurations for the TUI and for the command router
-; that is used to parse commands that are not valid SLP or control-commands in the REPL
-;
-; The idea is that if we want to customize the repl in a persistent way we
-; can define the command_router to do whatever we want outside of language bounds. This way
-; we can setup 
-;
-
-; Reserved command values: enter, up, down, tab, esc, ctrl+c, ctrl+q, ctrl+d
-;
 (set cmd_toggle_editor "ctrl+e")
 (set cmd_toggle_output "ctrl+o")
 (set cmd_clear "clear")
 
-; Colors for the TUI
-;
 (set color_prompt "#5f87ff")
 (set color_result "#00ff00")
 (set color_error "#ff0000")
@@ -25,6 +13,46 @@
 (set color_dirty_prompt "#ff5faf")
 (set color_secondary_action "#d75fd7")
 
+(set theme "default")
+
+(match theme
+    '("dark" (fn (x :S) :*
+        (do
+            (set color_prompt "#87ceeb")
+            (set color_result "#98fb98")
+            (set color_error "#ff6b6b")
+            (set color_help "#696969")
+            (set color_focused_border "#87ceeb")
+            (set color_blurred_border "#2f2f2f")
+            (set color_selected_item "#ba55d3")
+            (set color_history_item "#a9a9a9")
+            (set color_dirty_prompt "#ff69b4")
+            (set color_secondary_action "#ba55d3"))))
+    '("light" (fn (x :S) :*
+        (do
+            (set color_prompt "#0066cc")
+            (set color_result "#008000")
+            (set color_error "#cc0000")
+            (set color_help "#999999")
+            (set color_focused_border "#0066cc")
+            (set color_blurred_border "#cccccc")
+            (set color_selected_item "#9932cc")
+            (set color_history_item "#666666")
+            (set color_dirty_prompt "#cc0066")
+            (set color_secondary_action "#9932cc"))))
+    '("solarized" (fn (x :S) :*
+        (do
+            (set color_prompt "#268bd2")
+            (set color_result "#859900")
+            (set color_error "#dc322f")
+            (set color_help "#586e75")
+            (set color_focused_border "#268bd2")
+            (set color_blurred_border "#073642")
+            (set color_selected_item "#d33682")
+            (set color_history_item "#839496")
+            (set color_dirty_prompt "#cb4b16")
+            (set color_secondary_action "#d33682"))))
+    '("*" (fn (x :S) :* "default")))
 
 (set environment_preload 
     '(do
@@ -33,17 +61,6 @@
         (io/flush)
     ))
 
-;
-; Note: This function is invoked by an "injected" command into the runtime when a user supplied
-;       input fails in the REPL for any reason.
-;
-;       Variables defined in this function will NOT be available in the main REPL
-;       As any "set" is scoped to the function if the variable does not already exist externally.
-;
-;       However, this function MAY modify REPL variables that existed before the function was called
-;       if "set" is called on something that already exists. This is intentional so that the function
-;       can interact with/modify the REPL env.
-;
 (set command_router (fn (command :S) :S
     (match command
         '("help*" (fn (x :S) :S 
@@ -64,9 +81,6 @@
                 (io/out "Hello from SLPX command router!\n")
                 (io/out "This is a custom command handler\n")
 
-				; If you set a variable called "user_said_hello_in_repl" to "NOPE!" 
-				; in the REPL, and then type "hello" in the REPL, the variable will be set to "YEP!"
-				;
 				(set user_said_hello_in_repl "YEP!")
                 (io/flush)
                 "Hello executed")))
