@@ -99,11 +99,16 @@ func Load(logger *slog.Logger, file string, variables []Variable, timeout time.D
 }
 
 func loadFile(logger *slog.Logger, file string, timeout time.Duration, variables []Variable, fs env.FS, io env.IO) (map[object.Identifier]object.Obj, error) {
+
 	content, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
 
+	return LoadFromContent(logger, file, string(content), timeout, variables, fs, io)
+}
+
+func LoadFromContent(logger *slog.Logger, file string, content string, timeout time.Duration, variables []Variable, fs env.FS, io env.IO) (map[object.Identifier]object.Obj, error) {
 	// We let it create its own mem
 	session := repl.NewSessionBuilder(logger).
 		WithFS(fs).
@@ -115,6 +120,8 @@ func loadFile(logger *slog.Logger, file string, timeout time.Duration, variables
 		result, err := session.Evaluate(string(content))
 		resultChan <- evalResult{result, err}
 	}()
+
+	var err error
 
 	var result object.Obj
 	select {

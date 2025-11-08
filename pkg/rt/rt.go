@@ -11,7 +11,9 @@ import (
 	"github.com/bosley/slpx/pkg/planar"
 	"github.com/bosley/slpx/pkg/planar/goba"
 	"github.com/bosley/slpx/pkg/slp/env"
+	"github.com/bosley/slpx/pkg/slp/object"
 	"github.com/bosley/slpx/pkg/slp/repl"
+	"github.com/bosley/slpx/pkg/slpxcfg"
 	"github.com/google/uuid"
 )
 
@@ -19,6 +21,7 @@ type ActiveContext interface {
 	ID() string
 	DisplayName() string
 	GetRepl() *repl.Session
+	GetTuiConfig() TuiConfig
 	Close() error
 }
 
@@ -36,6 +39,14 @@ type Runtime interface {
 	Stop() error
 }
 
+type TuiConfig struct {
+	ForegroundDefaultColor string
+	BackgroundDefaultColor string
+	CmdToggleEditor        string
+	CmdToggleOutput        string
+	CmdClear               string
+}
+
 type activeContext struct {
 	id          string
 	displayName string
@@ -47,6 +58,8 @@ type activeContext struct {
 	repl *repl.Session
 
 	onClose func() error
+
+	tuiConfig TuiConfig
 }
 
 func (x *activeContext) ID() string {
@@ -59,6 +72,10 @@ func (x *activeContext) DisplayName() string {
 
 func (x *activeContext) GetRepl() *repl.Session {
 	return x.repl
+}
+
+func (x *activeContext) GetTuiConfig() TuiConfig {
+	return x.tuiConfig
 }
 
 func (x *activeContext) Close() error {
@@ -146,14 +163,37 @@ func (r *runtimeImpl) NewActiveContext(displayName string) (ActiveContext, error
 
 	repl := repl.NewSessionBuilder(r.logger).Build(r.launchDirectory)
 
+	fs := r.getFsForNewActiveContext()
+	io := r.getIoForNewActiveContext()
+
+	configuration, err := slpxcfg.LoadFromContent(r.logger, r.launchDirectory, r.setupContent, 10*time.Second, []slpxcfg.Variable{
+		{Identifier: "text_foreground", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "text_background", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "cmd_toggle_editor", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "cmd_toggle_output", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "cmd_clear", Type: object.OBJ_TYPE_STRING, Required: true},
+	}, fs, io)
+	if err != nil {
+		return nil, err
+	}
+
+	tuiConfig := TuiConfig{
+		ForegroundDefaultColor: configuration["text_foreground"].D.(string),
+		BackgroundDefaultColor: configuration["text_background"].D.(string),
+		CmdToggleEditor:        configuration["cmd_toggle_editor"].D.(string),
+		CmdToggleOutput:        configuration["cmd_toggle_output"].D.(string),
+		CmdClear:               configuration["cmd_clear"].D.(string),
+	}
+
 	ac := activeContext{
 		id:          uuid,
 		displayName: displayName,
 		env:         r.getEvalBuilderForNewActiveContext(uuid),
-		fs:          r.getFsForNewActiveContext(),
-		io:          r.getIoForNewActiveContext(),
+		fs:          fs,
+		io:          io,
 		mem:         r.getMemForNewActiveContext(),
 		repl:        repl,
+		tuiConfig:   tuiConfig,
 		onClose: func() error {
 			/*
 				Note: In the future we may want to have logic to deny close, so
