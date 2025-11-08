@@ -142,19 +142,36 @@ func (s *SharedState) EvaluateInput(input string) string {
 		}
 	}
 
-	if err != nil {
-		if parseErr, ok := err.(*slp.ParseError); ok {
-			output.WriteString(s.ErrorStyle().Render(fmt.Sprintf("Parse Error: %s", parseErr.Message)))
-		} else {
-			output.WriteString(s.ErrorStyle().Render(fmt.Sprintf("Error: %v", err)))
+	if err != nil || result.Type == object.OBJ_TYPE_ERROR {
+		routedResult, routeErr := s.tryCommandRoute(input)
+		if routeErr == nil && routedResult.Type != object.OBJ_TYPE_ERROR && routedResult.Type != "" {
+			routedOutput := s.CapturedIO.GetAndClear()
+			if routedOutput != "" {
+				output.WriteString(routedOutput)
+				if !strings.HasSuffix(routedOutput, "\n") {
+					output.WriteString("\n")
+				}
+			}
+			if routedResult.Type != object.OBJ_TYPE_NONE {
+				output.WriteString(s.ResultStyle().Render(routedResult.Encode()))
+			}
+			return output.String()
 		}
-		return output.String()
-	}
 
-	if result.Type == object.OBJ_TYPE_ERROR {
-		errObj := result.D.(object.Error)
-		output.WriteString(s.ErrorStyle().Render(fmt.Sprintf("Error: %s", errObj.Message)))
-		return output.String()
+		if err != nil {
+			if parseErr, ok := err.(*slp.ParseError); ok {
+				output.WriteString(s.ErrorStyle().Render(fmt.Sprintf("Parse Error: %s", parseErr.Message)))
+			} else {
+				output.WriteString(s.ErrorStyle().Render(fmt.Sprintf("Error: %v", err)))
+			}
+			return output.String()
+		}
+
+		if result.Type == object.OBJ_TYPE_ERROR {
+			errObj := result.D.(object.Error)
+			output.WriteString(s.ErrorStyle().Render(fmt.Sprintf("Error: %s", errObj.Message)))
+			return output.String()
+		}
 	}
 
 	if result.Type != object.OBJ_TYPE_NONE {
@@ -162,6 +179,26 @@ func (s *SharedState) EvaluateInput(input string) string {
 	}
 
 	return output.String()
+}
+
+func (s *SharedState) tryCommandRoute(input string) (object.Obj, error) {
+	if s.TuiConfig.CommandRouter.Body == nil {
+		return object.Obj{}, nil // no command router, so we don't try to route
+	}
+
+	routerIdent := object.Identifier("command_router")
+	_, err := s.Session.GetMEM().Get(routerIdent, true)
+	if err != nil {
+		return object.Obj{}, fmt.Errorf("command_router not in memory")
+	}
+
+	callExpr := fmt.Sprintf("(command_router %q)", input)
+	result, evalErr := s.Session.Evaluate(callExpr)
+	if evalErr != nil {
+		return object.Obj{}, evalErr
+	}
+
+	return result, nil
 }
 
 func (s *SharedState) AddCommand(input string, output string) {

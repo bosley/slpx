@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/bosley/slpx/pkg/rt"
+	"github.com/bosley/slpx/pkg/slp/object"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -50,6 +51,17 @@ func initialModel(logger *slog.Logger, slpxHome string, setupContent string) (mo
 	session.GetIO().SetStdout(capturedIO)
 	session.GetIO().SetStderr(capturedIO)
 
+	tuiConfig := ac.GetTuiConfig()
+
+	if tuiConfig.CommandRouter.Body != nil {
+		routerObj := object.Obj{
+			Type: object.OBJ_TYPE_FUNCTION,
+			D:    tuiConfig.CommandRouter,
+			Pos:  0,
+		}
+		session.GetMEM().Set(object.Identifier("command_router"), routerObj, true)
+	}
+
 	shared := &SharedState{
 		Logger:         logger,
 		Session:        session,
@@ -61,7 +73,7 @@ func initialModel(logger *slog.Logger, slpxHome string, setupContent string) (mo
 		PendingInput:   "",
 		Runtime:        runtime,
 		ActiveContext:  ac,
-		TuiConfig:      ac.GetTuiConfig(),
+		TuiConfig:      tuiConfig,
 	}
 
 	initialScreen := NewREPLScreen()

@@ -49,6 +49,7 @@ type TuiConfig struct {
 	HistoryItemColor     string
 	DirtyPromptColor     string
 	SecondaryActionColor string
+	CommandRouter        object.Function
 }
 
 type activeContext struct {
@@ -162,9 +163,18 @@ func (r *runtimeImpl) NewActiveContext(displayName string) (ActiveContext, error
 		{Identifier: "color_history_item", Type: object.OBJ_TYPE_STRING, Required: true},
 		{Identifier: "color_dirty_prompt", Type: object.OBJ_TYPE_STRING, Required: true},
 		{Identifier: "color_secondary_action", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "command_router", Type: object.OBJ_TYPE_FUNCTION, Required: false},
 	}, fs, io)
 	if err != nil {
 		return nil, err
+	}
+
+	var commandRouter object.Function
+	if routerObj, ok := configuration["command_router"]; ok {
+		commandRouter = routerObj.D.(object.Function)
+		r.logger.Info("command_router loaded from configuration")
+	} else {
+		r.logger.Warn("command_router not found in configuration - custom commands will not be available")
 	}
 
 	tuiConfig := TuiConfig{
@@ -181,6 +191,7 @@ func (r *runtimeImpl) NewActiveContext(displayName string) (ActiveContext, error
 		HistoryItemColor:     configuration["color_history_item"].D.(string),
 		DirtyPromptColor:     configuration["color_dirty_prompt"].D.(string),
 		SecondaryActionColor: configuration["color_secondary_action"].D.(string),
+		CommandRouter:        commandRouter,
 	}
 
 	restrictedShortcuts := []string{

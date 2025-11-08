@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bosley/slpx/cmd/slpx/assets"
 	"github.com/bosley/slpx/cmd/slpx/tui"
 	"github.com/bosley/slpx/pkg/rt"
 	"github.com/bosley/slpx/pkg/slp/object"
@@ -164,27 +165,7 @@ func install(logger *slog.Logger) {
 
 func writeDefaultSetupFile(slpxHome string) {
 
-	content := `
-
-; Reserved command values: enter, up, down, tab, esc, ctrl+c, ctrl+q, ctrl+d
-;
-(set cmd_toggle_editor "ctrl+e")
-(set cmd_toggle_output "ctrl+o")
-(set cmd_clear "clear")
-
-; Colors for the TUI
-;
-(set color_prompt "#5f87ff")
-(set color_result "#00ff00")
-(set color_error "#ff0000")
-(set color_help "#808080")
-(set color_focused_border "#5f87ff")
-(set color_blurred_border "#585858")
-(set color_selected_item "#d75fd7")
-(set color_history_item "#d0d0d0")
-(set color_dirty_prompt "#ff5faf")
-(set color_secondary_action "#d75fd7")
-	`
+	content := assets.LoadDefaultInitFile()
 
 	setupFile := filepath.Join(slpxHome, "init.slpx")
 	if _, err := os.Stat(setupFile); os.IsNotExist(err) {
