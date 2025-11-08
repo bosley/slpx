@@ -24,7 +24,7 @@ func NewREPLScreen() *REPLScreen {
 	ta.Prompt = "┃ "
 	ta.CharLimit = 0
 	ta.SetWidth(30)
-	ta.SetHeight(3)
+	ta.SetHeight(5)
 	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
 	ta.ShowLineNumbers = false
 	ta.KeyMap.InsertNewline.SetEnabled(false)
@@ -130,4 +130,3 @@ func (s *REPLScreen) View(shared *SharedState) string {
 		ctrlE, ctrlO, ctrlC, esc))
 	return fmt.Sprintf("%s%s%s\n%s", s.viewport.View(), gap, s.textarea.View(), helpText)
 }
-
