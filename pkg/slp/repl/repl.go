@@ -6,6 +6,7 @@ import (
 
 	"github.com/bosley/slpx/pkg/slp/cgs/bits"
 	"github.com/bosley/slpx/pkg/slp/cgs/fs"
+	"github.com/bosley/slpx/pkg/slp/cgs/host"
 	"github.com/bosley/slpx/pkg/slp/cgs/io"
 	"github.com/bosley/slpx/pkg/slp/cgs/list"
 	"github.com/bosley/slpx/pkg/slp/cgs/numbers"
@@ -93,6 +94,7 @@ func (b *SessionBuilder) Build(forPathOnFS string) *Session {
 	fsFunctions := fs.NewFsFunctions(b.logger.WithGroup("fs"))
 	ioFunctions := io.NewIoFunctions()
 	bitsFunctions := bits.NewBitsFunctions()
+	hostFunctions := host.NewHostFunctions(b.logger.WithGroup("host"))
 
 	session.env.evalCtx = env.NewEvalBuilder(b.logger.WithGroup("eval")).
 		WithIO(b.env.io).
@@ -106,6 +108,7 @@ func (b *SessionBuilder) Build(forPathOnFS string) *Session {
 		WithFunctionGroup(fsFunctions).
 		WithFunctionGroup(ioFunctions).
 		WithFunctionGroup(bitsFunctions).
+		WithFunctionGroup(hostFunctions).
 		Build()
 
 	session.env.evalCtx.SetCurrentFilePath(
