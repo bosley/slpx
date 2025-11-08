@@ -165,14 +165,19 @@ func install(logger *slog.Logger) {
 
 func writeDefaultSetupFile(slpxHome string) {
 
-	content := assets.LoadDefaultInitFile()
+	files := map[string]string{
+		"init.slpx":   assets.LoadDefaultInitFile(),
+		"themes.slpx": assets.LoadDefaultThemesFile(),
+	}
 
-	setupFile := filepath.Join(slpxHome, "init.slpx")
-	if _, err := os.Stat(setupFile); os.IsNotExist(err) {
-		color.HiYellow("Creating default setup file %s...", setupFile)
-		if err := os.WriteFile(setupFile, []byte(content), 0644); err != nil {
-			fmt.Fprintf(os.Stderr, "Error creating default setup file: %v\n", err)
-			os.Exit(1)
+	for filename, content := range files {
+		filePath := filepath.Join(slpxHome, filename)
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			color.HiYellow("Creating default setup file %s...", filePath)
+			if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+				fmt.Fprintf(os.Stderr, "Error creating default setup file: %v\n", err)
+				os.Exit(1)
+			}
 		}
 	}
 }

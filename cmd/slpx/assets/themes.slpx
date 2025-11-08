@@ -1,0 +1,60 @@
+(set theme "default")
+
+;   We define these here so they are present in the environment when
+;   the match statement below is hit. If they are not defined outside
+;   of the match statement, and prior-to, then the root-most environment
+;   won't capture the symbols and they will be freed/ not available to
+;   the runtime
+;
+(set color_prompt "#5f87ff")
+(set color_result "#00ff00")
+(set color_error "#ff0000")
+(set color_help "#808080")
+(set color_focused_border "#5f87ff")
+(set color_blurred_border "#585858")
+(set color_selected_item "#d75fd7")
+(set color_history_item "#d0d0d0")
+(set color_dirty_prompt "#ff5faf")
+(set color_secondary_action "#d75fd7")
+
+;   Bases on the "theme" provided, configure the TUI
+;
+(match theme
+    '("dark" (fn (x :S) :*
+        (do
+            (set color_prompt "#87ceeb")
+            (set color_result "#98fb98")
+            (set color_error "#ff6b6b")
+            (set color_help "#696969")
+            (set color_focused_border "#87ceeb")
+            (set color_blurred_border "#2f2f2f")
+            (set color_selected_item "#ba55d3")
+            (set color_history_item "#a9a9a9")
+            (set color_dirty_prompt "#ff69b4")
+            (set color_secondary_action "#ba55d3"))))
+    '("light" (fn (x :S) :*
+        (do
+            (set color_prompt "#0066cc")
+            (set color_result "#008000")
+            (set color_error "#cc0000")
+            (set color_help "#999999")
+            (set color_focused_border "#0066cc")
+            (set color_blurred_border "#cccccc")
+            (set color_selected_item "#9932cc")
+            (set color_history_item "#666666")
+            (set color_dirty_prompt "#cc0066")
+            (set color_secondary_action "#9932cc"))))
+    '("solarized" (fn (x :S) :*
+        (do
+            (set color_prompt "#268bd2")
+            (set color_result "#859900")
+            (set color_error "#dc322f")
+            (set color_help "#586e75")
+            (set color_focused_border "#268bd2")
+            (set color_blurred_border "#073642")
+            (set color_selected_item "#d33682")
+            (set color_history_item "#839496")
+            (set color_dirty_prompt "#cb4b16")
+            (set color_secondary_action "#d33682"))))
+    '("*" (fn (x :S) :* "default")))
+

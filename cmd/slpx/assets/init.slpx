@@ -1,59 +1,26 @@
+; Modify the control keys and TUI-specific "commands"
+; ctrl+c, ctrl+q, enter, up, down, left, right are reserved "tea"
+; commmands meant for specific aspects of navigation, but any other
+; "tea" control commands re valid for the toggles
+;
 (set cmd_toggle_editor "ctrl+e")
 (set cmd_toggle_output "ctrl+o")
+
+; non-tea command, this is checked before sending to parser to see if the
+; user wants to clear the screen
+;
 (set cmd_clear "clear")
 
-(set color_prompt "#5f87ff")
-(set color_result "#00ff00")
-(set color_error "#ff0000")
-(set color_help "#808080")
-(set color_focused_border "#5f87ff")
-(set color_blurred_border "#585858")
-(set color_selected_item "#d75fd7")
-(set color_history_item "#d0d0d0")
-(set color_dirty_prompt "#ff5faf")
-(set color_secondary_action "#d75fd7")
+; This file sets the theme parameters for the tui. Other settings can follow this same
+; pattern following the knowledge obtained from reading themes.slpx and unserstanding
+; how to ensure the symbols are properly exposed to the configurator
+;
+(use "themes.slpx")
 
-(set theme "default")
-
-(match theme
-    '("dark" (fn (x :S) :*
-        (do
-            (set color_prompt "#87ceeb")
-            (set color_result "#98fb98")
-            (set color_error "#ff6b6b")
-            (set color_help "#696969")
-            (set color_focused_border "#87ceeb")
-            (set color_blurred_border "#2f2f2f")
-            (set color_selected_item "#ba55d3")
-            (set color_history_item "#a9a9a9")
-            (set color_dirty_prompt "#ff69b4")
-            (set color_secondary_action "#ba55d3"))))
-    '("light" (fn (x :S) :*
-        (do
-            (set color_prompt "#0066cc")
-            (set color_result "#008000")
-            (set color_error "#cc0000")
-            (set color_help "#999999")
-            (set color_focused_border "#0066cc")
-            (set color_blurred_border "#cccccc")
-            (set color_selected_item "#9932cc")
-            (set color_history_item "#666666")
-            (set color_dirty_prompt "#cc0066")
-            (set color_secondary_action "#9932cc"))))
-    '("solarized" (fn (x :S) :*
-        (do
-            (set color_prompt "#268bd2")
-            (set color_result "#859900")
-            (set color_error "#dc322f")
-            (set color_help "#586e75")
-            (set color_focused_border "#268bd2")
-            (set color_blurred_border "#073642")
-            (set color_selected_item "#d33682")
-            (set color_history_item "#839496")
-            (set color_dirty_prompt "#cb4b16")
-            (set color_secondary_action "#d33682"))))
-    '("*" (fn (x :S) :* "default")))
-
+; The environment_preload is a list of expressions that are evaluated when the
+; runtime is initialized. This is a way to preload the environment with variables
+; and routines you want available the moment that the REPL starts
+;
 (set environment_preload 
     '(do
         (set user_said_hello_in_repl "NOPE!")
@@ -61,6 +28,10 @@
         (io/flush)
     ))
 
+; The command router is handed the direct string from a user in the REPL iff the
+; user's input was NOT valid SLP. Meaning it was either a bad list or something
+; other than a list
+;
 (set command_router (fn (command :S) :S
     (match command
         '("help*" (fn (x :S) :S 
