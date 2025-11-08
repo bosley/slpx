@@ -1,0 +1,7 @@
+(set environment_preload 
+    '(do
+        (set user_said_hello_in_repl "NOPE!")
+        (io/out "Environment preloaded\n")
+        (io/flush)
+    ))
+

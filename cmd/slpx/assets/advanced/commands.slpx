@@ -1,0 +1,5 @@
+(set cmd_toggle_editor "ctrl+e")
+(set cmd_toggle_output "ctrl+o")
+
+(set cmd_clear "clear")
+

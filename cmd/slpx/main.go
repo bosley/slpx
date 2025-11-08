@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bosley/slpx/cmd/slpx/assets"
+	"github.com/bosley/slpx/cmd/slpx/installer"
 	"github.com/bosley/slpx/cmd/slpx/tui"
 	"github.com/bosley/slpx/pkg/rt"
 	"github.com/bosley/slpx/pkg/slp/object"
@@ -25,7 +25,13 @@ func main() {
 		Level: slog.LevelInfo,
 	}))
 
+	isInstalled := checkInstalled(slpxHome)
+
 	if len(os.Args) < 2 {
+		if !isInstalled {
+			installer.Launch(logger, slpxHome)
+			return
+		}
 		tui.Launch(logger, slpxHome, setupContent)
 		return
 	}
@@ -38,11 +44,14 @@ func main() {
 	filePath := os.Args[1]
 
 	switch filePath {
+	case "setup":
+		installer.Launch(logger, slpxHome)
+		return
 	case "uninstall":
-		uninstall(logger)
+		uninstall(logger, slpxHome)
 		return
 	case "install":
-		install(logger)
+		install(logger, slpxHome)
 		return
 	}
 
@@ -113,6 +122,12 @@ func main() {
 	fmt.Printf("Result: %s\n", result.Encode())
 }
 
+func checkInstalled(slpxHome string) bool {
+	initFile := filepath.Join(slpxHome, "init.slpx")
+	_, err := os.Stat(initFile)
+	return err == nil
+}
+
 func loadSetupFile(slpxHome string) string {
 	setupFile := filepath.Join(slpxHome, "init.slpx")
 	if _, err := os.Stat(setupFile); os.IsNotExist(err) {
@@ -155,31 +170,10 @@ func setupSLPXHome() string {
 	return slpxHome
 }
 
-func install(logger *slog.Logger) {
-	slpxHome := setupSLPXHome()
-	writeDefaultSetupFile(slpxHome)
+func install(logger *slog.Logger, slpxHome string) {
+	installer.InstallDefault(logger, slpxHome)
 	time.Sleep(250 * time.Millisecond)
-	color.HiGreen("SLPX installed successfully")
 	os.Exit(0)
-}
-
-func writeDefaultSetupFile(slpxHome string) {
-
-	files := map[string]string{
-		"init.slpx":   assets.LoadDefaultInitFile(),
-		"themes.slpx": assets.LoadDefaultThemesFile(),
-	}
-
-	for filename, content := range files {
-		filePath := filepath.Join(slpxHome, filename)
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			color.HiYellow("Creating default setup file %s...", filePath)
-			if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
-				fmt.Fprintf(os.Stderr, "Error creating default setup file: %v\n", err)
-				os.Exit(1)
-			}
-		}
-	}
 }
 
 func positionToLineCol(content string, position int) (line int, col int, lineStart int, lineEnd int) {
@@ -237,29 +231,19 @@ func formatError(err object.Error, sourceContent string) string {
 	return output.String()
 }
 
-func uninstall(logger *slog.Logger) {
-	slpxHome := os.Getenv("SLPX_HOME")
-	if slpxHome == "" {
-		home, err := os.UserConfigDir()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting config directory: %v\n", err)
-			os.Exit(1)
-		}
-		slpxHome = filepath.Join(home, "slpx")
-
-		_, err = os.Stat(slpxHome)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				fmt.Fprintf(os.Stderr, "Error getting config directory: %v\n", err)
-				os.Exit(1)
-			}
+func uninstall(logger *slog.Logger, slpxHome string) {
+	_, err := os.Stat(slpxHome)
+	if err != nil {
+		if os.IsNotExist(err) {
 			color.HiYellow("Config directory %s does not exist, skipping uninstall", slpxHome)
 			return
 		}
+		fmt.Fprintf(os.Stderr, "Error getting config directory: %v\n", err)
+		os.Exit(1)
 	}
 
-	color.HiRed("Uninstalling SLPX...")
-	os.RemoveAll(slpxHome)
-	os.Unsetenv("SLPX_HOME")
-	color.HiGreen("SLPX uninstalled successfully")
+	if err := installer.Uninstall(logger, slpxHome); err != nil {
+		fmt.Fprintf(os.Stderr, "Error uninstalling: %v\n", err)
+		os.Exit(1)
+	}
 }
