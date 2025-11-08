@@ -144,10 +144,11 @@ func (r *runtimeImpl) NewActiveContext(displayName string) (ActiveContext, error
 
 	uuid := uuid.New().String()
 
-	repl := repl.NewSessionBuilder(r.logger).Build(r.launchDirectory)
-
 	fs := r.getFsForNewActiveContext()
 	io := r.getIoForNewActiveContext()
+	mem := r.getMemForNewActiveContext()
+
+	repl := repl.NewSessionBuilder(r.logger).WithFS(fs).WithIO(io).WithMEM(mem).Build(r.launchDirectory)
 
 	configuration, err := slpxcfg.LoadFromContent(r.logger, r.launchDirectory, r.setupContent, 10*time.Second, []slpxcfg.Variable{
 		{Identifier: "cmd_toggle_editor", Type: object.OBJ_TYPE_STRING, Required: true},
@@ -164,6 +165,7 @@ func (r *runtimeImpl) NewActiveContext(displayName string) (ActiveContext, error
 		{Identifier: "color_dirty_prompt", Type: object.OBJ_TYPE_STRING, Required: true},
 		{Identifier: "color_secondary_action", Type: object.OBJ_TYPE_STRING, Required: true},
 		{Identifier: "command_router", Type: object.OBJ_TYPE_FUNCTION, Required: false},
+		{Identifier: "environment_preload", Type: object.OBJ_TYPE_LIST, Required: false},
 	}, fs, io)
 	if err != nil {
 		return nil, err
@@ -175,6 +177,17 @@ func (r *runtimeImpl) NewActiveContext(displayName string) (ActiveContext, error
 		r.logger.Info("command_router loaded from configuration")
 	} else {
 		r.logger.Warn("command_router not found in configuration - custom commands will not be available")
+	}
+
+	if preloadObj, ok := configuration["environment_preload"]; ok {
+		r.logger.Info("evaluating environment_preload")
+		encodedList := preloadObj.Encode()
+		_, evalErr := repl.Evaluate(encodedList)
+		if evalErr != nil {
+			r.logger.Warn("failed to evaluate environment_preload", "error", evalErr)
+		} else {
+			r.logger.Info("environment_preload evaluated successfully")
+		}
 	}
 
 	tuiConfig := TuiConfig{
@@ -225,7 +238,7 @@ func (r *runtimeImpl) NewActiveContext(displayName string) (ActiveContext, error
 		env:         r.getEvalBuilderForNewActiveContext(uuid),
 		fs:          fs,
 		io:          io,
-		mem:         r.getMemForNewActiveContext(),
+		mem:         mem,
 		repl:        repl,
 		tuiConfig:   tuiConfig,
 		onClose: func() error {

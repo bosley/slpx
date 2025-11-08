@@ -25,6 +25,14 @@
 (set color_dirty_prompt "#ff5faf")
 (set color_secondary_action "#d75fd7")
 
+
+(set environment_preload 
+    '(do
+        (set user_said_hello_in_repl "NOPE!")
+        (io/out "Environment preloaded\n")
+        (io/flush)
+    ))
+
 ;
 ; Note: This function is invoked by an "injected" command into the runtime when a user supplied
 ;       input fails in the REPL for any reason.
