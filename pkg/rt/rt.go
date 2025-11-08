@@ -1,15 +1,11 @@
 package rt
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
-	"path/filepath"
 	"sync"
 	"time"
 
-	"github.com/bosley/slpx/pkg/planar"
-	"github.com/bosley/slpx/pkg/planar/goba"
 	"github.com/bosley/slpx/pkg/slp/env"
 	"github.com/bosley/slpx/pkg/slp/object"
 	"github.com/bosley/slpx/pkg/slp/repl"
@@ -40,11 +36,19 @@ type Runtime interface {
 }
 
 type TuiConfig struct {
-	ForegroundDefaultColor string
-	BackgroundDefaultColor string
-	CmdToggleEditor        string
-	CmdToggleOutput        string
-	CmdClear               string
+	CmdToggleEditor      string
+	CmdToggleOutput      string
+	CmdClear             string
+	PromptColor          string
+	ResultColor          string
+	ErrorColor           string
+	HelpColor            string
+	FocusedBorderColor   string
+	BlurredBorderColor   string
+	SelectedItemColor    string
+	HistoryItemColor     string
+	DirtyPromptColor     string
+	SecondaryActionColor string
 }
 
 type activeContext struct {
@@ -90,9 +94,6 @@ type runtimeImpl struct {
 
 	activeContexts map[string]activeContext
 	acMutex        sync.Mutex
-
-	kvProvider planar.KVProvider
-	rootKV     planar.KV
 }
 
 type Config struct {
@@ -104,32 +105,13 @@ type Config struct {
 
 func New(config Config) (Runtime, error) {
 
-	fmt.Println("Opening badger backend", filepath.Join(config.SLPXHome, "root.db"))
-	kvp := goba.OpenBadgerBackend(filepath.Join(config.SLPXHome, "root.db"))
-
-	rootKV, err := kvp.LoadOrCreate(config.Logger, "slpx-root")
-	if err != nil {
-		return nil, err
-	}
-
-	exists, err := rootKV.Exists([]byte("slpx-root-init-complete"))
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		if err := firstTimeInit(config.Logger, rootKV); err != nil {
-			return nil, err
-		}
-	}
-
 	return &runtimeImpl{
 		logger:          config.Logger,
 		slpxHome:        config.SLPXHome,
 		launchDirectory: config.LaunchDirectory,
-		kvProvider:      kvp,
+		setupContent:    config.SetupContent,
 		activeContexts:  make(map[string]activeContext),
 		acMutex:         sync.Mutex{},
-		rootKV:          rootKV,
 	}, nil
 }
 
@@ -167,22 +149,63 @@ func (r *runtimeImpl) NewActiveContext(displayName string) (ActiveContext, error
 	io := r.getIoForNewActiveContext()
 
 	configuration, err := slpxcfg.LoadFromContent(r.logger, r.launchDirectory, r.setupContent, 10*time.Second, []slpxcfg.Variable{
-		{Identifier: "text_foreground", Type: object.OBJ_TYPE_STRING, Required: true},
-		{Identifier: "text_background", Type: object.OBJ_TYPE_STRING, Required: true},
 		{Identifier: "cmd_toggle_editor", Type: object.OBJ_TYPE_STRING, Required: true},
 		{Identifier: "cmd_toggle_output", Type: object.OBJ_TYPE_STRING, Required: true},
 		{Identifier: "cmd_clear", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "color_prompt", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "color_result", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "color_error", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "color_help", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "color_focused_border", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "color_blurred_border", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "color_selected_item", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "color_history_item", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "color_dirty_prompt", Type: object.OBJ_TYPE_STRING, Required: true},
+		{Identifier: "color_secondary_action", Type: object.OBJ_TYPE_STRING, Required: true},
 	}, fs, io)
 	if err != nil {
 		return nil, err
 	}
 
 	tuiConfig := TuiConfig{
-		ForegroundDefaultColor: configuration["text_foreground"].D.(string),
-		BackgroundDefaultColor: configuration["text_background"].D.(string),
-		CmdToggleEditor:        configuration["cmd_toggle_editor"].D.(string),
-		CmdToggleOutput:        configuration["cmd_toggle_output"].D.(string),
-		CmdClear:               configuration["cmd_clear"].D.(string),
+		CmdToggleEditor:      configuration["cmd_toggle_editor"].D.(string),
+		CmdToggleOutput:      configuration["cmd_toggle_output"].D.(string),
+		CmdClear:             configuration["cmd_clear"].D.(string),
+		PromptColor:          configuration["color_prompt"].D.(string),
+		ResultColor:          configuration["color_result"].D.(string),
+		ErrorColor:           configuration["color_error"].D.(string),
+		HelpColor:            configuration["color_help"].D.(string),
+		FocusedBorderColor:   configuration["color_focused_border"].D.(string),
+		BlurredBorderColor:   configuration["color_blurred_border"].D.(string),
+		SelectedItemColor:    configuration["color_selected_item"].D.(string),
+		HistoryItemColor:     configuration["color_history_item"].D.(string),
+		DirtyPromptColor:     configuration["color_dirty_prompt"].D.(string),
+		SecondaryActionColor: configuration["color_secondary_action"].D.(string),
+	}
+
+	restrictedShortcuts := []string{
+		"enter",
+		"up",
+		"down",
+		"tab",
+		"esc",
+		"ctrl+c",
+		"ctrl+q",
+		"ctrl+d",
+	}
+
+	toCheck := []string{
+		tuiConfig.CmdToggleEditor,
+		tuiConfig.CmdToggleOutput,
+		tuiConfig.CmdClear,
+	}
+
+	for _, shortcut := range toCheck {
+		for _, shortcutRestricted := range restrictedShortcuts {
+			if shortcut == shortcutRestricted {
+				return nil, fmt.Errorf("shortcut %s is restricted", shortcut)
+			}
+		}
 	}
 
 	ac := activeContext{
@@ -207,22 +230,6 @@ func (r *runtimeImpl) NewActiveContext(displayName string) (ActiveContext, error
 	return &ac, nil
 }
 
-func firstTimeInit(logger *slog.Logger, rootKV planar.KV) error {
-	logger.Info("performing first time initialization")
-
-	nowStr := time.Now().Format(time.RFC3339)
-
-	res, err := rootKV.Set([]byte("slpx-root-init-complete"), []byte(nowStr))
-	if err != nil {
-		return err
-	}
-	if res.UniqueKeyBytesDelta == 0 {
-		return errors.New("failed to set slpx-root-init-complete")
-	}
-
-	return nil
-}
-
 func (r *runtimeImpl) Stop() error {
 
 	r.acMutex.Lock()
@@ -231,5 +238,5 @@ func (r *runtimeImpl) Stop() error {
 		ac.Close()
 	}
 
-	return r.kvProvider.Close()
+	return nil
 }

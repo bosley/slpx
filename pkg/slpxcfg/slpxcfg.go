@@ -109,7 +109,6 @@ func loadFile(logger *slog.Logger, file string, timeout time.Duration, variables
 }
 
 func LoadFromContent(logger *slog.Logger, file string, content string, timeout time.Duration, variables []Variable, fs env.FS, io env.IO) (map[object.Identifier]object.Obj, error) {
-	// We let it create its own mem
 	session := repl.NewSessionBuilder(logger).
 		WithFS(fs).
 		WithIO(io).

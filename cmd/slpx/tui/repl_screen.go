@@ -86,14 +86,14 @@ func (s *REPLScreen) Update(shared *SharedState, msg tea.Msg) (Screen, tea.Cmd) 
 		switch msg.String() {
 		case "ctrl+c", "esc":
 			return s, tea.Quit
-		case "ctrl+e":
+		case shared.TuiConfig.CmdToggleEditor:
 			return NewEditorScreen(), nil
-		case "ctrl+o":
+		case shared.TuiConfig.CmdToggleOutput:
 			return NewOutputScreen(), nil
 		case "enter":
 			value := s.textarea.Value()
 			if value != "" {
-				if value == "clear" || value == "cls" {
+				if value == shared.TuiConfig.CmdClear {
 					shared.ClearOutput()
 					s.viewport.SetContent("")
 					s.textarea.Reset()
@@ -121,12 +121,12 @@ func (s *REPLScreen) View(shared *SharedState) string {
 		return "Initializing..."
 	}
 
-	ctrlE := lipgloss.NewStyle().Foreground(lipgloss.Color("69")).Bold(true).Render("ctrl+e")
-	ctrlO := lipgloss.NewStyle().Foreground(lipgloss.Color("170")).Bold(true).Render("ctrl+o")
-	ctrlC := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("ctrl+c")
-	esc := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("esc")
+	ctrlE := shared.PromptStyle().Render(shared.TuiConfig.CmdToggleEditor)
+	ctrlO := shared.SecondaryActionStyle().Render(shared.TuiConfig.CmdToggleOutput)
+	ctrlC := shared.ErrorStyle().Render("ctrl+c")
+	esc := shared.ErrorStyle().Render("esc")
 
-	helpText := HelpStyle.Render(fmt.Sprintf("%s: editor/history • %s: scroll output • %s/%s: quit",
+	helpText := shared.HelpStyle().Render(fmt.Sprintf("%s: editor/history • %s: scroll output • %s/%s: quit",
 		ctrlE, ctrlO, ctrlC, esc))
 	return fmt.Sprintf("%s%s%s\n%s", s.viewport.View(), gap, s.textarea.View(), helpText)
 }

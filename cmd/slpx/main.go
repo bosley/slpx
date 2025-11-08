@@ -113,7 +113,7 @@ func main() {
 }
 
 func loadSetupFile(slpxHome string) string {
-	setupFile := filepath.Join(slpxHome, "init.slp")
+	setupFile := filepath.Join(slpxHome, "init.slpx")
 	if _, err := os.Stat(setupFile); os.IsNotExist(err) {
 		return ""
 	}
@@ -165,14 +165,28 @@ func install(logger *slog.Logger) {
 func writeDefaultSetupFile(slpxHome string) {
 
 	content := `
-(set text_foreground "#000000")
-(set text_background "#FFFF00")
+
+; Reserved command values: enter, up, down, tab, esc, ctrl+c, ctrl+q, ctrl+d
+;
 (set cmd_toggle_editor "ctrl+e")
 (set cmd_toggle_output "ctrl+o")
 (set cmd_clear "clear")
+
+; Colors for the TUI
+;
+(set color_prompt "#5f87ff")
+(set color_result "#00ff00")
+(set color_error "#ff0000")
+(set color_help "#808080")
+(set color_focused_border "#5f87ff")
+(set color_blurred_border "#585858")
+(set color_selected_item "#d75fd7")
+(set color_history_item "#d0d0d0")
+(set color_dirty_prompt "#ff5faf")
+(set color_secondary_action "#d75fd7")
 	`
 
-	setupFile := filepath.Join(slpxHome, "init.slp")
+	setupFile := filepath.Join(slpxHome, "init.slpx")
 	if _, err := os.Stat(setupFile); os.IsNotExist(err) {
 		color.HiYellow("Creating default setup file %s...", setupFile)
 		if err := os.WriteFile(setupFile, []byte(content), 0644); err != nil {

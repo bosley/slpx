@@ -61,6 +61,7 @@ func initialModel(logger *slog.Logger, slpxHome string, setupContent string) (mo
 		PendingInput:   "",
 		Runtime:        runtime,
 		ActiveContext:  ac,
+		TuiConfig:      ac.GetTuiConfig(),
 	}
 
 	initialScreen := NewREPLScreen()
