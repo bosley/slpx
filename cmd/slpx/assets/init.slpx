@@ -1,7 +1,7 @@
 ; Modify the control keys and TUI-specific "commands"
-; ctrl+c, ctrl+q, enter, up, down, left, right are reserved "tea"
-; commmands meant for specific aspects of navigation, but any other
-; "tea" control commands re valid for the toggles
+; The following keys are reserved: enter, up, down, tab, esc, ctrl+c, ctrl+q, ctrl+d
+; These reserved "tea" commands are used for specific navigation and core actions,
+; and cannot be assigned to toggles. Any other "tea" control commands are valid for the toggles.
 ;
 (set cmd_toggle_editor "ctrl+e")
 (set cmd_toggle_output "ctrl+o")
