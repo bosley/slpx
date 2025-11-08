@@ -9,7 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const gap = "\n\n"
+const gap = "\n"
 
 type REPLScreen struct {
 	viewport viewport.Model
@@ -45,7 +45,7 @@ func (s *REPLScreen) OnEnter(shared *SharedState) tea.Cmd {
 	if shared.Width > 0 && shared.Height > 0 {
 		s.viewport.Width = shared.Width
 		s.textarea.SetWidth(shared.Width)
-		s.viewport.Height = shared.Height - s.textarea.Height() - lipgloss.Height(gap) - 2
+		s.viewport.Height = shared.Height - s.textarea.Height()
 		content := shared.RenderOutput()
 		s.viewport.SetContent(lipgloss.NewStyle().Width(s.viewport.Width).Render(content))
 		s.viewport.GotoBottom()
@@ -76,7 +76,7 @@ func (s *REPLScreen) Update(shared *SharedState, msg tea.Msg) (Screen, tea.Cmd) 
 
 		s.viewport.Width = msg.Width
 		s.textarea.SetWidth(msg.Width)
-		s.viewport.Height = msg.Height - s.textarea.Height() - lipgloss.Height(gap) - 2
+		s.viewport.Height = msg.Height - s.textarea.Height() - lipgloss.Height(gap)
 
 		content := shared.RenderOutput()
 		s.viewport.SetContent(lipgloss.NewStyle().Width(s.viewport.Width).Render(content))
