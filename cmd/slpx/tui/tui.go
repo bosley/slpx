@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bosley/slpx/pkg/slp/repl"
+	"github.com/bosley/slpx/pkg/rt"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -22,17 +22,33 @@ type model struct {
 	currentScreen Screen
 }
 
-func initialModel(logger *slog.Logger) model {
+func initialModel(logger *slog.Logger, slpxHome string, setupContent string) (model, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		cwd = "."
 	}
 	sessionPath := filepath.Join(cwd, ".repl.slpx")
 
+	runtime, err := rt.New(rt.Config{
+		Logger:          logger,
+		SLPXHome:        slpxHome,
+		LaunchDirectory: sessionPath,
+		SetupContent:    setupContent,
+	})
+	if err != nil {
+		return model{}, err
+	}
+
+	ac, err := runtime.NewActiveContext("tui")
+	if err != nil {
+		runtime.Stop()
+		return model{}, err
+	}
+
 	capturedIO := &capturedIO{}
-	session := repl.NewSessionBuilder(logger).
-		WithIO(capturedIO).
-		Build(sessionPath)
+	session := ac.GetRepl()
+	session.GetIO().SetStdout(capturedIO)
+	session.GetIO().SetStderr(capturedIO)
 
 	shared := &SharedState{
 		Logger:         logger,
@@ -43,6 +59,8 @@ func initialModel(logger *slog.Logger) model {
 		Width:          0,
 		Height:         0,
 		PendingInput:   "",
+		Runtime:        runtime,
+		ActiveContext:  ac,
 	}
 
 	initialScreen := NewREPLScreen()
@@ -50,7 +68,7 @@ func initialModel(logger *slog.Logger) model {
 	return model{
 		shared:        shared,
 		currentScreen: initialScreen,
-	}
+	}, nil
 }
 
 func (m model) Init() tea.Cmd {
@@ -75,8 +93,23 @@ func (m model) View() string {
 	return m.currentScreen.View(m.shared)
 }
 
-func Launch(logger *slog.Logger) {
-	p := tea.NewProgram(initialModel(logger), tea.WithAltScreen())
+func Launch(logger *slog.Logger, slpxHome string, setupContent string) {
+	m, err := initialModel(logger, slpxHome, setupContent)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing TUI: %v\n", err)
+		os.Exit(1)
+	}
+
+	defer func() {
+		if m.shared.ActiveContext != nil {
+			m.shared.ActiveContext.Close()
+		}
+		if m.shared.Runtime != nil {
+			m.shared.Runtime.Stop()
+		}
+	}()
+
+	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running TUI: %v\n", err)
 		os.Exit(1)

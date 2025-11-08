@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/bosley/slpx/pkg/rt"
 	"github.com/bosley/slpx/pkg/slp/object"
 	"github.com/bosley/slpx/pkg/slp/repl"
 	"github.com/bosley/slpx/pkg/slp/slp"
@@ -92,6 +93,8 @@ type SharedState struct {
 	Width          int
 	Height         int
 	PendingInput   string
+	Runtime        rt.Runtime
+	ActiveContext  rt.ActiveContext
 }
 
 func (s *SharedState) EvaluateInput(input string) string {
