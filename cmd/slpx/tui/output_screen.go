@@ -46,7 +46,7 @@ func (s *OutputScreen) Update(shared *SharedState, msg tea.Msg) (Screen, tea.Cmd
 		switch msg.String() {
 		case "ctrl+c":
 			return s, tea.Quit
-		case "esc", "ctrl+o", "q":
+		case "esc", shared.TuiConfig.CmdToggleOutput, "q":
 			return NewREPLScreen(), nil
 		}
 	}
@@ -56,15 +56,15 @@ func (s *OutputScreen) Update(shared *SharedState, msg tea.Msg) (Screen, tea.Cmd
 }
 
 func (s *OutputScreen) View(shared *SharedState) string {
-	arrows := lipgloss.NewStyle().Foreground(lipgloss.Color("69")).Bold(true).Render("↑/↓")
-	escKey := lipgloss.NewStyle().Foreground(lipgloss.Color("170")).Bold(true).Render("esc")
-	ctrlO := lipgloss.NewStyle().Foreground(lipgloss.Color("170")).Bold(true).Render("ctrl+o")
-	qKey := lipgloss.NewStyle().Foreground(lipgloss.Color("170")).Bold(true).Render("q")
-	ctrlC := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("ctrl+c")
+	arrows := shared.PromptStyle().Render("↑/↓")
+	escKey := shared.SecondaryActionStyle().Render("esc")
+	ctrlO := shared.SecondaryActionStyle().Render(shared.TuiConfig.CmdToggleOutput)
+	qKey := shared.SecondaryActionStyle().Render("q")
+	ctrlC := shared.ErrorStyle().Render("ctrl+c")
 
-	helpText := HelpStyle.Render(fmt.Sprintf("%s: scroll • %s/%s/%s: back to REPL • %s: quit",
+	helpText := shared.HelpStyle().Render(fmt.Sprintf("%s: scroll • %s/%s/%s: back to REPL • %s: quit",
 		arrows, escKey, ctrlO, qKey, ctrlC))
 
-	return fmt.Sprintf("%s\n\n%s", FocusedStyle.Render(s.viewport.View()), helpText)
+	return fmt.Sprintf("%s\n\n%s", shared.FocusedStyle().Render(s.viewport.View()), helpText)
 }
 

@@ -102,7 +102,7 @@ func (s *EditorScreen) Update(shared *SharedState, msg tea.Msg) (Screen, tea.Cmd
 		switch msg.String() {
 		case "ctrl+c":
 			return s, tea.Quit
-		case "ctrl+e":
+		case shared.TuiConfig.CmdToggleEditor:
 			value := s.textarea.Value()
 			if value != "" {
 				shared.PendingInput = value
@@ -111,7 +111,7 @@ func (s *EditorScreen) Update(shared *SharedState, msg tea.Msg) (Screen, tea.Cmd
 		case "esc":
 			value := s.textarea.Value()
 			if value != "" {
-				if value == "clear" || value == "cls" {
+				if value == shared.TuiConfig.CmdClear {
 					shared.ClearOutput()
 					s.textarea.Reset()
 					return NewREPLScreen(), tea.WindowSize()
@@ -171,12 +171,12 @@ func (s *EditorScreen) View(shared *SharedState) string {
 	editorWidth := (shared.Width / 2) - 2
 	historyWidth := shared.Width - editorWidth - 4
 
-	editorStyle := BlurredStyle
-	historyStyle := BlurredStyle
+	editorStyle := shared.BlurredStyle()
+	historyStyle := shared.BlurredStyle()
 	if s.focus == editorFocus {
-		editorStyle = FocusedStyle
+		editorStyle = shared.FocusedStyle()
 	} else {
-		historyStyle = FocusedStyle
+		historyStyle = shared.FocusedStyle()
 	}
 
 	contentHeight := shared.Height - 3
@@ -189,24 +189,24 @@ func (s *EditorScreen) View(shared *SharedState) string {
 
 	var helpText string
 	if s.showDirtyPrompt {
-		aKey := lipgloss.NewStyle().Foreground(lipgloss.Color("69")).Bold(true).Render("[a]")
-		oKey := lipgloss.NewStyle().Foreground(lipgloss.Color("170")).Bold(true).Render("[o]")
-		cKey := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("[c]")
-		helpText = DirtyPromptStyle.Render(fmt.Sprintf("Editor has content! %s ppend • %s verwrite • %s ancel", aKey, oKey, cKey))
+		aKey := shared.PromptStyle().Render("[a]")
+		oKey := shared.SecondaryActionStyle().Render("[o]")
+		cKey := shared.ErrorStyle().Render("[c]")
+		helpText = shared.DirtyPromptStyle().Render(fmt.Sprintf("Editor has content! %s ppend • %s verwrite • %s ancel", aKey, oKey, cKey))
 	} else if s.focus == editorFocus {
-		tab := lipgloss.NewStyle().Foreground(lipgloss.Color("170")).Bold(true).Render("tab")
-		ctrlE := lipgloss.NewStyle().Foreground(lipgloss.Color("69")).Bold(true).Render("ctrl+e")
-		esc := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true).Render("esc")
-		ctrlC := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("ctrl+c")
-		helpText = HelpStyle.Render(fmt.Sprintf("%s: history • %s: exit • %s: eval & exit • %s: quit",
+		tab := shared.SecondaryActionStyle().Render("tab")
+		ctrlE := shared.PromptStyle().Render(shared.TuiConfig.CmdToggleEditor)
+		esc := shared.DirtyPromptStyle().Render("esc")
+		ctrlC := shared.ErrorStyle().Render("ctrl+c")
+		helpText = shared.HelpStyle().Render(fmt.Sprintf("%s: history • %s: exit • %s: eval & exit • %s: quit",
 			tab, ctrlE, esc, ctrlC))
 	} else {
-		arrows := lipgloss.NewStyle().Foreground(lipgloss.Color("69")).Bold(true).Render("↑/↓")
-		enter := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true).Render("enter")
-		tab := lipgloss.NewStyle().Foreground(lipgloss.Color("170")).Bold(true).Render("tab")
-		ctrlE := lipgloss.NewStyle().Foreground(lipgloss.Color("69")).Bold(true).Render("ctrl+e")
-		ctrlC := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("ctrl+c")
-		helpText = HelpStyle.Render(fmt.Sprintf("%s: navigate • %s: select • %s: editor • %s: exit • %s: quit",
+		arrows := shared.PromptStyle().Render("↑/↓")
+		enter := shared.DirtyPromptStyle().Render("enter")
+		tab := shared.SecondaryActionStyle().Render("tab")
+		ctrlE := shared.PromptStyle().Render(shared.TuiConfig.CmdToggleEditor)
+		ctrlC := shared.ErrorStyle().Render("ctrl+c")
+		helpText = shared.HelpStyle().Render(fmt.Sprintf("%s: navigate • %s: select • %s: editor • %s: exit • %s: quit",
 			arrows, enter, tab, ctrlE, ctrlC))
 	}
 
@@ -249,9 +249,9 @@ func (s *EditorScreen) renderHistory(shared *SharedState, width, height int) str
 		}
 
 		if i == s.historySelection {
-			historyItems = append(historyItems, SelectedItemStyle.Render("► "+displayInput))
+			historyItems = append(historyItems, shared.SelectedItemStyle().Render("► "+displayInput))
 		} else {
-			historyItems = append(historyItems, HistoryItemStyle.Render("  "+displayInput))
+			historyItems = append(historyItems, shared.HistoryItemStyle().Render("  "+displayInput))
 		}
 	}
 

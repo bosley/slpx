@@ -1,0 +1,30 @@
+(set command_router (fn (command :S) :S
+    (match command
+        '("help*" (fn (x :S) :S 
+            (do
+                (io/out "Available custom commands:\n")
+                (io/out "  help - Show this help message\n")
+                (io/out "  version - Show SLPX version\n")
+                (io/out "  hello - Greeting message\n")
+                (io/flush)
+                "Command help displayed")))
+        '("version*" (fn (x :S) :S 
+            (do
+                (io/out "SLPX Language System v1.0\n")
+                (io/flush)
+                "Version info displayed\n")))
+        '("hello*" (fn (x :S) :S 
+            (do
+                (io/out "Hello from SLPX command router!\n")
+                (io/out "This is a custom command handler\n")
+
+				(set user_said_hello_in_repl "YEP!")
+                (io/flush)
+                "Hello executed")))
+        '("*" (fn (x :S) :S 
+            (do
+                (io/out (str/concat "Unknown command: " x "\n"))
+                (io/out "Type 'help' for available commands\n")
+                (io/flush)
+                "Unknown command"))))))
+

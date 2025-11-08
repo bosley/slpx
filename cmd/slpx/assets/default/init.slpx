@@ -1,0 +1,64 @@
+; Modify the control keys and TUI-specific "commands"
+; The following keys are reserved: enter, up, down, tab, esc, ctrl+c, ctrl+q, ctrl+d
+; These reserved "tea" commands are used for specific navigation and core actions,
+; and cannot be assigned to toggles. Any other "tea" control commands are valid for the toggles.
+;
+(set cmd_toggle_editor "ctrl+e")
+(set cmd_toggle_output "ctrl+o")
+
+; non-tea command, this is checked before sending to parser to see if the
+; user wants to clear the screen
+;
+(set cmd_clear "clear")
+
+; This file sets the theme parameters for the tui. Other settings can follow this same
+; pattern following the knowledge obtained from reading themes.slpx and unserstanding
+; how to ensure the symbols are properly exposed to the configurator
+;
+(use "themes.slpx")
+
+; The environment_preload is a list of expressions that are evaluated when the
+; runtime is initialized. This is a way to preload the environment with variables
+; and routines you want available the moment that the REPL starts
+;
+(set environment_preload 
+    '(do
+        (set user_said_hello_in_repl "NOPE!")
+        (io/out "Environment preloaded\n")
+        (io/flush)
+    ))
+
+; The command router is handed the direct string from a user in the REPL iff the
+; user's input was NOT valid SLP. Meaning it was either a bad list or something
+; other than a list
+;
+(set command_router (fn (command :S) :S
+    (match command
+        '("help*" (fn (x :S) :S 
+            (do
+                (io/out "Available custom commands:\n")
+                (io/out "  help - Show this help message\n")
+                (io/out "  version - Show SLPX version\n")
+                (io/out "  hello - Greeting message\n")
+                (io/flush)
+                "Command help displayed")))
+        '("version*" (fn (x :S) :S 
+            (do
+                (io/out "SLPX Language System v1.0\n")
+                (io/flush)
+                "Version info displayed\n")))
+        '("hello*" (fn (x :S) :S 
+            (do
+                (io/out "Hello from SLPX command router!\n")
+                (io/out "This is a custom command handler\n")
+
+				(set user_said_hello_in_repl "YEP!")
+                (io/flush)
+                "Hello executed")))
+        '("*" (fn (x :S) :S 
+            (do
+                (io/out (str/concat "Unknown command: " x "\n"))
+                (io/out "Type 'help' for available commands\n")
+                (io/flush)
+                "Unknown command"))))))
+

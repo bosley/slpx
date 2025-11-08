@@ -1,3 +1,13 @@
+/*
+This is the simplified SLP CLI. It does not offer a tui or engage in any of the specialized
+runtime activity. It can take in a single slpx file and execute vanilla slp commands
+
+Use this with "tests/primitive/main.slpx" to run core tests on the SLP language implementation
+without the larger runtime overhead
+
+bosley
+*/
+
 package main
 
 import (
@@ -6,54 +16,29 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/bosley/slpx/cmd/slpx/installer"
-	"github.com/bosley/slpx/cmd/slpx/tui"
-	"github.com/bosley/slpx/pkg/rt"
 	"github.com/bosley/slpx/pkg/slp/object"
+	"github.com/bosley/slpx/pkg/slp/repl"
 	"github.com/bosley/slpx/pkg/slp/slp"
-	"github.com/fatih/color"
 )
 
 func main() {
 
-	slpxHome := setupSLPXHome()
-	setupContent := loadSetupFile(slpxHome)
-
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
-
-	isInstalled := checkInstalled(slpxHome)
-
-	if len(os.Args) < 2 {
-		if !isInstalled {
-			installer.Launch(logger, slpxHome)
-			return
-		}
-		tui.Launch(logger, slpxHome, setupContent)
-		return
-	}
 
 	if len(os.Args) > 2 {
 		fmt.Fprintf(os.Stderr, "Usage: %s [file]\n", os.Args[0])
 		os.Exit(1)
 	}
 
-	filePath := os.Args[1]
-
-	switch filePath {
-	case "setup":
-		installer.Launch(logger, slpxHome)
-		return
-	case "uninstall":
-		uninstall(logger, slpxHome)
-		return
-	case "install":
-		install(logger, slpxHome)
-		return
+	if len(os.Args) < 2 {
+		fmt.Fprintf(os.Stderr, "Usage: %s [file]\n", os.Args[0])
+		os.Exit(1)
 	}
+
+	filePath := os.Args[1]
 
 	content, err := os.ReadFile(filePath)
 	if err != nil {
@@ -66,27 +51,7 @@ func main() {
 		absFilePath = filePath
 	}
 
-	runtime, err := rt.New(rt.Config{
-		Logger:          logger,
-		SLPXHome:        slpxHome,
-		LaunchDirectory: absFilePath,
-		SetupContent:    setupContent,
-	})
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating runtime: %v\n", err)
-		os.Exit(1)
-	}
-
-	defer runtime.Stop()
-
-	ac, err := runtime.NewActiveContext("main")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating active context: %v\n", err)
-		os.Exit(1)
-	}
-
-	session := ac.GetRepl()
+	session := repl.NewSessionBuilder(logger).Build(absFilePath)
 
 	result, err := session.Evaluate(string(content))
 	session.GetIO().Flush()
@@ -120,60 +85,6 @@ func main() {
 	}
 
 	fmt.Printf("Result: %s\n", result.Encode())
-}
-
-func checkInstalled(slpxHome string) bool {
-	initFile := filepath.Join(slpxHome, "init.slpx")
-	_, err := os.Stat(initFile)
-	return err == nil
-}
-
-func loadSetupFile(slpxHome string) string {
-	setupFile := filepath.Join(slpxHome, "init.slpx")
-	if _, err := os.Stat(setupFile); os.IsNotExist(err) {
-		return ""
-	}
-	content, err := os.ReadFile(setupFile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading setup file: %v\n", err)
-		os.Exit(1)
-	}
-	return string(content)
-}
-
-func setupSLPXHome() string {
-
-	slpxHome := os.Getenv("SLPX_HOME")
-	if slpxHome == "" {
-		home, err := os.UserConfigDir()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting config directory: %v\n", err)
-			os.Exit(1)
-		}
-		slpxHome = filepath.Join(home, "slpx")
-
-		_, err = os.Stat(slpxHome)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				fmt.Fprintf(os.Stderr, "Error getting config directory: %v\n", err)
-				os.Exit(1)
-			}
-			color.HiYellow("Config directory %s does not exist, creating it...", slpxHome)
-			if err := os.MkdirAll(slpxHome, 0755); err != nil {
-				fmt.Fprintf(os.Stderr, "Error creating config directory: %v\n", err)
-				os.Exit(1)
-			}
-			time.Sleep(250 * time.Millisecond)
-		}
-		os.Setenv("SLPX_HOME", slpxHome)
-	}
-	return slpxHome
-}
-
-func install(logger *slog.Logger, slpxHome string) {
-	installer.InstallDefault(logger, slpxHome)
-	time.Sleep(250 * time.Millisecond)
-	os.Exit(0)
 }
 
 func positionToLineCol(content string, position int) (line int, col int, lineStart int, lineEnd int) {
@@ -229,21 +140,4 @@ func formatError(err object.Error, sourceContent string) string {
 	}
 
 	return output.String()
-}
-
-func uninstall(logger *slog.Logger, slpxHome string) {
-	_, err := os.Stat(slpxHome)
-	if err != nil {
-		if os.IsNotExist(err) {
-			color.HiYellow("Config directory %s does not exist, skipping uninstall", slpxHome)
-			return
-		}
-		fmt.Fprintf(os.Stderr, "Error getting config directory: %v\n", err)
-		os.Exit(1)
-	}
-
-	if err := installer.Uninstall(logger, slpxHome); err != nil {
-		fmt.Fprintf(os.Stderr, "Error uninstalling: %v\n", err)
-		os.Exit(1)
-	}
 }

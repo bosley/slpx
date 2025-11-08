@@ -1,0 +1,5 @@
+(use "commands.slpx")
+(use "themes.slpx")
+(use "preload.slpx")
+(use "handler.slpx")
+
