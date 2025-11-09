@@ -26,6 +26,20 @@ To see the main test suite run, or (recommended) just run:
 This will launcht the TUI REPL environment. This environment is a little basic, but much more than your average
 language demo REPL. 
 
+## TUI Interface
+
+Upon first run, you'll be greeted with an installation wizard:
+
+<img src="resources/install.png" width="600" alt="Installation">
+
+The editor provides a clean interface for writing SLPX code:
+
+<img src="resources/editor.png" width="600" alt="Editor">
+
+The output screen displays execution results with syntax highlighting:
+
+<img src="resources/tui-out.png" width="600" alt="Output">
+
 ## Examples/Etc
 
 In `examples/` you will find runnable samples that you can run as a file into the main `slpx` binary, or you can
