@@ -31,6 +31,10 @@ language demo REPL.
 In `examples/` you will find runnable samples that you can run as a file into the main `slpx` binary, or you can
 pick and mix into the REPL editor to explore the environment.
 
+For more advanced examples and a very wide breadth of all commands used, see `tests/primitive/bootstrap.slpx` and
+examine its role in the `primitive` tests by reading the `tests/primitives/main.slpx` in relation tot he bootstrap
+file.
+
 # SLP - Parser & Data
 
 Parses test into lists of the following:
