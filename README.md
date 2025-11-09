@@ -1,8 +1,37 @@
-# README
+# SLPX - Simple List Processor
 
-This readme covers a projec I've been considering making in go for quite some time. Its just a simple list processor.
+A configurable list-processing language with a TUI REPL environment, macro system, and extensible runtime.
 
-This document fully details how it works, but if you're impatient and just want to see the code, run:
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [TUI Interface](#tui-interface)
+- [Examples](#examplesetc)
+- [Customization](#customization)
+- [Syntax Highlighting](#syntax-highlighting)
+- [SLP - Parser & Data](#slp---parser--data)
+  - [Integer](#integer)
+  - [Real](#real)
+  - [String](#string)
+  - [Identifier](#identifier)
+  - [Error](#error)
+  - [List](#list)
+  - [Some](#some)
+  - [None](#none)
+  - [Macros](#macros)
+- [Runtime](#runtime)
+  - [Commands](#commands)
+  - [Type Symbols](#type-symbols)
+  - [Variadics](#variadics)
+  - [System-Reserved Identifiers](#system-reserved-identifiers)
+- [Function Execution Architecture](#function-execution-architecture)
+  - [Key Architectural Points](#key-architectural-points)
+
+---
+
+## Quick Start
+
+This document fully details how the language works, but if you're impatient and just want to see the code, run:
 
 ```bash
 make
@@ -28,15 +57,18 @@ language demo REPL.
 
 ## TUI Interface
 
-Upon first run, you'll be greeted with an installation wizard:
+Upon first run, you'll be greeted with an installation prompt to setup the files required to run
+the configurable user repl environment. 
 
 <img src="resources/install.png" width="600" alt="Installation">
 
-The editor provides a clean interface for writing SLPX code:
+The editor provides a clean interface for writing SLPX code, able to be toggled from the more traditional
+REPL input screen. This screen also contains a vertival list of past commands able to be selected from
+and inserted into the editor (not shown.)
 
 <img src="resources/editor.png" width="600" alt="Editor">
 
-The output screen displays execution results with syntax highlighting:
+The output screen displays execution results with proper output highlighting:
 
 <img src="resources/tui-out.png" width="600" alt="Output">
 
