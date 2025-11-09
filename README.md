@@ -483,4 +483,4 @@ LEGEND:
 
 **Memory Scoping**: Object functions capture their defining scope as a closure, forking memory contexts for each invocation. Env functions operate directly within the current evaluation context but can access runtime interfaces (MEM, FS, IO).
 
-**Type System**: Type validation occurs at runtime using type symbols (:I, :S, :R, etc.) with support for :* (any type) wildcards. This provides optional type safety without requiring compile-time analysis.
+**Type System**: Type validation occurs at runtime using type symbols (:I, :S, :R, etc.) with support for :* (any type) wildcards. 
