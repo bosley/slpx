@@ -35,6 +35,17 @@ For more advanced examples and a very wide breadth of all commands used, see `te
 examine its role in the `primitive` tests by reading the `tests/primitives/main.slpx` in relation tot he bootstrap
 file.
 
+## Customization
+
+The tui controls and colors can be customized by modifying your `init.slpx` in the operating system's config dir under
+"slpx." This dir is commonly `~/.config/` on linux and `/Users/<username>/Library/Application\ Support/` on mac.
+
+The files themselves are source from `cmd/slpx/assets` under `advanced` and `default`.
+
+## Syntax Highlighting
+
+Read `syntax/README.md` to see how to install the syntax files for `.slpx` extensions in VSCode + derivatives.
+
 # SLP - Parser & Data
 
 Parses test into lists of the following:
@@ -300,3 +311,176 @@ The runtime leverages this reserved namespace to inject context-specific identif
 **`$error`** is injected into the handler body of a `try` statement when the attempted expression results in an error. The `$error` identifier contains the error message as a string. After the handler completes, `$error` is explicitly removed from memory and is no longer available.
 
 This design permits the runtime to provide contextual data to executing code while maintaining a clear separation between user space and system space.
+
+---
+
+# Function Execution Architecture
+
+The SLP runtime processes functions through a layered evaluation architecture that distinguishes between user-defined functions and runtime-provided functions. The following diagram illustrates the complete execution flow from source text through evaluation to final execution.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              SOURCE TEXT                                    │
+│                          "(putln (fn () :I 42))"                            │
+└────────────────────────────────┬────────────────────────────────────────────┘
+                                 │
+                                 v
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         PARSER (slp/slp.go)                                 │
+│  - Tokenizes source into objects                                            │
+│  - Expands macros via expandMacroIfNeeded()                                 │
+│  - Returns: List, Integer, Real, String, Identifier, Some, None, Error      │
+└────────────────────────────────┬────────────────────────────────────────────┘
+                                 │
+                                 v
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     EVALUATION CONTEXT (env/env.go)                         │
+│                                                                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                       │
+│  │     MEM      │  │      FS      │  │      IO      │                       │
+│  │  (memory)    │  │ (filesystem) │  │   (stdio)    │                       │
+│  └──────────────┘  └──────────────┘  └──────────────┘                       │
+│                                                                             │
+│  ┌────────────────────────────────────────────────────────────────┐         │
+│  │              FUNCTION GROUP REGISTRY                           │         │
+│  │                                                                │         │
+│  │  CORE (env/core.go)                                            │         │
+│  │    set, putln, fn, try, do, drop, qu, uq, use, exit, if,       │         │
+│  │    match                                                       │         │
+│  │                                                                │         │
+│  │  CGS (pkg/slp/cgs/*)                                           │         │
+│  │    - host:       env/get, os, hw/mem/total, hw/cpu/count...    │         │
+│  │    - fs:         exists?, read_file, write_file, list_dir...   │         │
+│  │    - bits:       explode, int, real                            │         │
+│  │    - str:        string operations                             │         │
+│  │    - io:         I/O operations                                │         │
+│  │    - list:       list operations                               │         │
+│  │    - numbers:    numeric operations                            │         │
+│  │    - reflection: type introspection                            │         │
+│  └────────────────────────────────────────────────────────────────┘         │
+└────────────────────────────────┬────────────────────────────────────────────┘
+                                 │
+                                 v
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          Evaluate(obj Obj)                                  │
+│                                                                             │
+│  Switch on obj.Type:                                                        │
+│    - NONE, STRING, INTEGER, REAL, ERROR, FUNCTION  →  return as-is          │
+│    - SOME (quoted)  →  return without evaluation                            │
+│    - IDENTIFIER     →  lookupIdentifier() [check MEM, then FunctionGroups]  │
+│    - LIST           →  Execute(list) ↓                                      │
+└────────────────────────────────┬────────────────────────────────────────────┘
+                                 │
+                                 v
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          Execute(list List)                                 │
+│                                                                             │
+│  1. Evaluate first element of list                                          │
+│  2. Determine callable type                                                 │
+└────────────────┬───────────────────────────────────┬────────────────────────┘
+                 │                                   │
+        ┌────────v───────────┐               ┌───────v─────────────┐
+        │  OBJ_TYPE_FUNCTION │               │ OBJ_TYPE_IDENTIFIER │
+        │  (User Function)   │               │  (Env Function)     │
+        └────────┬───────────┘               └───────┬─────────────┘
+                 │                                   │
+                 v                                   v
+┌─────────────────────────────────────┐  ┌─────────────────────────────────────┐
+│  executeObjectFunction()            │  │  executeEnvFunction()               │
+│                                     │  │                                     │
+│  Source: (fn) command               │  │  Source: FunctionGroup lookup       │
+│  Storage: MEM (user variables)      │  │  Storage: functionGroups map        │
+│  Closure: Captured MEM context      │  │  Closure: N/A                       │
+│                                     │  │                                     │
+│  ┌───────────────────────────────┐  │  │  ┌───────────────────────────────┐  │
+│  │ 1. Check if Variadic          │  │  │  │ 1. Evaluate Args?             │  │
+│  │    YES: executeVariadicFn()   │  │  │  │    (controlled by             │  │
+│  │    NO:  executeNormalFn()     │  │  │  │     EvaluateArgs flag)        │  │
+│  └────────┬──────────────────────┘  │  │  └────────┬──────────────────────┘  │
+│           │                         │  │           │                         │
+│           v                         │  │           v                         │
+│  ┌───────────────────────────────┐  │  │  ┌───────────────────────────────┐  │
+│  │ 2. Evaluate Arguments         │  │  │  │ 2. Validate Arg Count         │  │
+│  │    - Each arg passed through  │  │  │  │    - Fixed: exact match       │  │
+│  │      Evaluate()               │  │  │  │    - Variadic: at least N     │  │
+│  └────────┬──────────────────────┘  │  │  └────────┬──────────────────────┘  │
+│           │                         │  │           │                         │
+│           v                         │  │           v                         │
+│  ┌───────────────────────────────┐  │  │  ┌───────────────────────────────┐  │
+│  │ 3. Create Child MEM           │  │  │  │ 3. Validate Arg Types         │  │
+│  │    - Fork from closure or     │  │  │  │    - Match against            │  │
+│  │      current MEM              │  │  │  │      EnvParameter types       │  │
+│  │    - Variadic: inject $args   │  │  │  │    - Check :I, :S, :R, etc.   │  │
+│  │    - Normal: bind params      │  │  │  └────────┬──────────────────────┘  │
+│  └────────┬──────────────────────┘  │  │           │                         │
+│           │                         │  │           v                         │
+│           v                         │  │  ┌───────────────────────────────┐  │
+│  ┌───────────────────────────────┐  │  │  │ 4. Execute Body Function      │  │
+│  │ 4. Validate Param Types       │  │  │  │    - Body(ctx, args)          │  │
+│  │    - Match against            │  │  │  │    - Direct Go code           │  │
+│  │      Parameter.Type           │  │  │  │    - Access Runtime via ctx   │  │
+│  └────────┬──────────────────────┘  │  │  └────────┬──────────────────────┘  │
+│           │                         │  │           │                         │
+│           v                         │  │           v                         │
+│  ┌───────────────────────────────┐  │  │  ┌───────────────────────────────┐  │
+│  │ 5. Create Child Context       │  │  │  │ 5. Validate Return Type       │  │
+│  │    - Same IO, FS              │  │  │  │    - Match against            │  │
+│  │    - Same FunctionGroups      │  │  │  │      ReturnType               │  │
+│  │    - Child MEM                │  │  │  └────────┬──────────────────────┘  │
+│  └────────┬──────────────────────┘  │  │           │                         │
+│           │                         │  │           v                         │
+│           v                         │  │        RETURN                       │
+│  ┌───────────────────────────────┐  │  │                                     │
+│  │ 6. Execute Body Instructions  │  │  └─────────────────────────────────────┘
+│  │    - Iterate Function.Body    │  │
+│  │    - Evaluate each in order   │  │
+│  │    - Return last result       │  │
+│  └────────┬──────────────────────┘  │
+│           │                         │
+│           v                         │
+│  ┌───────────────────────────────┐  │
+│  │ 7. Validate Return Type       │  │
+│  │    - Match against            │  │
+│  │      Function.ReturnType      │  │
+│  └────────┬──────────────────────┘  │
+│           │                         │
+│           v                         │
+│        RETURN                       │
+│                                     │
+└─────────────────────────────────────┘
+
+EXAMPLE EXECUTION FLOWS:
+
+1. User Function Call:  (my-add 5 10)
+   └─> Evaluate(my-add) -> lookup in MEM -> returns OBJ_TYPE_FUNCTION
+       └─> executeObjectFunction([5, 10])
+           └─> Create child MEM, bind params, execute body, return result
+
+2. Core Function Call:  (putln "hello")
+   └─> Evaluate(putln) -> lookup identifier -> returns OBJ_TYPE_IDENTIFIER
+       └─> lookupEnvFunction("putln") -> found in "core" FunctionGroup
+           └─> executeEnvFunction([evaluated "hello"])
+               └─> cmdPutln writes to IO
+
+3. CGS Function Call:  (fs/read_file "test.txt")
+   └─> Evaluate(fs/read_file) -> lookup identifier -> returns OBJ_TYPE_IDENTIFIER
+       └─> lookupEnvFunction("fs/read_file") -> found in "fs" FunctionGroup
+           └─> executeEnvFunction([evaluated "test.txt"])
+               └─> cmdReadFile accesses FS interface via Runtime
+
+LEGEND:
+  →     Direct transformation
+  ↓     Continues to next step
+```
+
+## Key Architectural Points
+
+**Function Categories**: The runtime distinguishes between Object Functions (user-defined via `fn`) stored in MEM and Env Functions (runtime-provided) organized into Function Groups. This separation enables controlled extensibility.
+
+**Function Groups**: Each FunctionGroup implements a simple interface exposing a Name() and Functions() map. Core functions live in `env/core.go` while Command Grouped Symbols (CGS) are organized by domain in `pkg/slp/cgs/*`.
+
+**Evaluation Pipeline**: All arguments flow through a validation pipeline that checks count, type, and evaluates based on the function's EvaluateArgs flag. This enables both strict type enforcement and lazy evaluation patterns.
+
+**Memory Scoping**: Object functions capture their defining scope as a closure, forking memory contexts for each invocation. Env functions operate directly within the current evaluation context but can access runtime interfaces (MEM, FS, IO).
+
+**Type System**: Type validation occurs at runtime using type symbols (:I, :S, :R, etc.) with support for :* (any type) wildcards. This provides optional type safety without requiring compile-time analysis.

@@ -11,6 +11,7 @@
     { "include": "#core-keywords" },
     { "include": "#bits-functions" },
     { "include": "#fs-functions" },
+    { "include": "#host-functions" },
     { "include": "#io-functions" },
     { "include": "#list-functions" },
     { "include": "#numbers-functions" },
@@ -96,6 +97,14 @@
         {
           "name": "support.function.fs.slpx",
           "match": "\\b(?:fs/exists\\?|fs/dir\\?|fs/file\\?|fs/read_file|fs/write_file|fs/append_file|fs/rm_file|fs/mk_dir|fs/mk_dir_all|fs/rm_dir|fs/rm_dir_all|fs/list_dir|fs/working_dir|fs/set_working_dir)(?=\\s|\\)|\\(|$)"
+        }
+      ]
+    },
+    "host-functions": {
+      "patterns": [
+        {
+          "name": "support.function.host.slpx",
+          "match": "\\b(?:host/env/get|host/env/set|host/dir/home|host/dir/config|host/dir/temp|host/dir/cache|host/os|host/hw/mem/total|host/hw/mem/available|host/hw/mem/used|host/hw/mem/percent|host/hw/disk/total|host/hw/disk/used|host/hw/disk/percent|host/hw/cpu/percent|host/hw/cpu/count|host/hw/cpu/percent/at|host/hw/cpu/model/at|host/hw/cpu/mhz/at|host/hw/cpu/cache/at)(?=\\s|\\)|\\(|$)"
         }
       ]
     },
