@@ -315,6 +315,19 @@ idendtifiers `set` `drop` `fn`, and more.
 commands. Most of the existing commands are part of a CGS. See pkg/slp/cgs to see what commands are central enough to
 be grouped in the language itself, but not technically the `most central` set of commands.
 
+#### Available Command Groups
+
+Detailed documentation for each command group:
+
+- **[Bits](pkg/slp/cgs/bits/cfgs-bits.md)** - Bit-level manipulation and binary conversion functions
+- **[Filesystem](pkg/slp/cgs/fs/cgs-fs.md)** - File and directory operations, path manipulation
+- **[Host](pkg/slp/cgs/host/cgs-host.md)** - System information, environment variables, hardware queries
+- **[IO](pkg/slp/cgs/io/cgs-io.md)** - Input/output operations, color formatting, console interaction
+- **[List](pkg/slp/cgs/list/cgs-list.md)** - List manipulation, iteration, and functional programming
+- **[Numbers](pkg/slp/cgs/numbers/cgs-numbers.md)** - Arithmetic operations, comparisons, and math functions
+- **[Reflection](pkg/slp/cgs/reflection/cgs-reflection.md)** - Type introspection and runtime type checking
+- **[String](pkg/slp/cgs/str/cgs-str.md)** - String manipulation, conversion, and processing
+
 ## Type Symbols
 
 These symbols are used by the runtime when parsing function definitions (the `fn` command) and/or a matching
