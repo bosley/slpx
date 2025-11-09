@@ -21,8 +21,11 @@ $(TARGET): $(SRCS)
 	@mkdir -p $(BUILD_DIR)
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(TARGET) ./$(CMD_DIR)
 
-test:
+test: build
 	$(GO) test -v -race -cover $(PKG_DIRS)
+	@echo ""
+	@echo "Running integration tests..."
+	@cd tests && ./run.sh
 
 clean:
 	rm -rf $(BUILD_DIR)
