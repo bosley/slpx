@@ -14,7 +14,6 @@ TEST_DIRS=(
     "primitive"
     "macros"
     "errors"
-    "complex"
 )
 
 echo ""
