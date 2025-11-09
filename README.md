@@ -6,7 +6,7 @@ A configurable list-processing language with a TUI REPL environment, macro syste
 
 - [Quick Start](#quick-start)
 - [TUI Interface](#tui-interface)
-- [Examples](#examplesetc)
+- [Examples/Etc](#examplesetc)
 - [Customization](#customization)
 - [Syntax Highlighting](#syntax-highlighting)
 - [SLP - Parser & Data](#slp---parser--data)
@@ -19,13 +19,34 @@ A configurable list-processing language with a TUI REPL environment, macro syste
   - [Some](#some)
   - [None](#none)
   - [Macros](#macros)
+    - [Definition](#definition)
+    - [Invocation](#invocation)
+    - [Template Substitution](#template-substitution)
+    - [Expansion Timing](#expansion-timing)
+    - [Scope and Redefinition](#scope-and-redefinition)
+    - [Error Conditions](#error-conditions)
+    - [Use Cases](#use-cases)
 - [Runtime](#runtime)
   - [Commands](#commands)
+    - [Core Commands](#core-commands)
+    - [Command Grouped Symbols](#command-grouped-symbols)
+      - [Available Command Groups](#available-command-groups)
+        - [Bits](pkg/slp/cgs/bits/cfgs-bits.md)
+        - [Filesystem](pkg/slp/cgs/fs/cgs-fs.md)
+        - [Host](pkg/slp/cgs/host/cgs-host.md)
+        - [IO](pkg/slp/cgs/io/cgs-io.md)
+        - [List](pkg/slp/cgs/list/cgs-list.md)
+        - [Numbers](pkg/slp/cgs/numbers/cgs-numbers.md)
+        - [Reflection](pkg/slp/cgs/reflection/cgs-reflection.md)
+        - [String](pkg/slp/cgs/str/cgs-str.md)
   - [Type Symbols](#type-symbols)
   - [Variadics](#variadics)
   - [System-Reserved Identifiers](#system-reserved-identifiers)
 - [Function Execution Architecture](#function-execution-architecture)
   - [Key Architectural Points](#key-architectural-points)
+- [Tests](#tests)
+  - [Primary SLPX tests](#primary-slpx-tests)
+  - [Primitive Test Process](#primitive-test-process)
 
 ---
 
@@ -543,3 +564,64 @@ LEGEND:
 **Memory Scoping**: Object functions capture their defining scope as a closure, forking memory contexts for each invocation. Env functions operate directly within the current evaluation context but can access runtime interfaces (MEM, FS, IO).
 
 **Type System**: Type validation occurs at runtime using type symbols (:I, :S, :R, etc.) with support for :* (any type) wildcards. 
+
+# Tests
+
+The system is reasonably well tested, and all tests can be ran with a simple `make clean && make test`
+
+This will launch all go tests, and it will also cd into the `tests/` directory to launch the series of tests 
+that cover the core language and command groups.
+
+While there is decent test coverage there has been no investigation into the memory profile of the runtime. This is all still
+very much under development.
+
+## Primary SLPX tests
+
+The "core" language coverage is done in the following files: 
+
+```bash
+find tests/primitive -name "*.slpx" -type f -exec wc -lw {} + 
+     640    2235 tests/primitive/str.slpx
+     842    3201 tests/primitive/list.slpx
+     556    1704 tests/primitive/fs.slpx
+     392    1481 tests/primitive/reflection.slpx
+     569    1956 tests/primitive/bootstrap.slpx
+     849    2873 tests/primitive/bits.slpx
+      73     436 tests/primitive/main.slpx
+     346    1345 tests/primitive/match.slpx
+    1240    4209 tests/primitive/numbers.slpx
+    5507   19440 total
+```
+
+the `main.slpx` file is loaded by the `run.sh` in `tests/` which then begins to `use` each slpx file to initiate tests.
+
+## Primitive Test Process
+
+My goal here was to use the most basic level functionality offered by core.go
+to test itself, attempting to detect errors in the first ways it might fail if
+something were tampered with in the core that could produce an edge case.
+
+I do this by using lambdas to produce integers by-way of a conditional on
+raw-typed objects "0" and "1". The logic internally to yield a 1 or 0 from
+a conditional, from within a lambda, producing a checked-for "integer" type
+exercises go code that is sensitive to change (for obvious reasons - it impacts
+every aspect of calling, and conditions.)
+
+We then check values against lambdas for asserting truthy/falsy values, and
+kill execution if our expectations are not met.
+
+In the bootstrap file, what is mentioned above is implemented immediatly, followed by
+a long series of similar self<->referencing checks using all commands in, and only 
+commands from, core.go.
+
+If bootstrap passes, we can then safely assume that the core of the language is working
+and can then proceed to load the tests of commands added via CommandGroups which are part
+of the main language expressions, but are logically grouped seperate from the base functions required
+to build the language itself, and other groups of main expressions.
+
+They are tested in the order they are needed to be used to test others, as we pollute
+the environment with all commands in top level statements on-use. 
+We can use functions defined in the files to test others, but most importantly,
+we gain the trust that commands tested are commands we can rely on to actually do
+the test checking, meaining that for instance "reflection" can rely on "numbers" 
+to be working.
