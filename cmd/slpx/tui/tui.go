@@ -28,12 +28,11 @@ func initialModel(logger *slog.Logger, slpxHome string, setupContent string) (mo
 	if err != nil {
 		cwd = "."
 	}
-	sessionPath := filepath.Join(cwd, ".repl.slpx")
 
 	runtime, err := rt.New(rt.Config{
 		Logger:          logger,
 		SLPXHome:        slpxHome,
-		LaunchDirectory: sessionPath,
+		LaunchDirectory: cwd,
 		SetupContent:    setupContent,
 	})
 	if err != nil {
@@ -63,17 +62,23 @@ func initialModel(logger *slog.Logger, slpxHome string, setupContent string) (mo
 	}
 
 	shared := &SharedState{
-		Logger:         logger,
-		Session:        session,
-		CapturedIO:     capturedIO,
-		CommandHistory: []string{},
-		OutputHistory:  []string{},
-		Width:          0,
-		Height:         0,
-		PendingInput:   "",
-		Runtime:        runtime,
-		ActiveContext:  ac,
-		TuiConfig:      tuiConfig,
+		Logger:          logger,
+		Session:         session,
+		CapturedIO:      capturedIO,
+		CommandHistory:  []string{},
+		OutputHistory:   []string{},
+		Width:           0,
+		Height:          0,
+		PendingInput:    "",
+		Runtime:         runtime,
+		ActiveContext:   ac,
+		TuiConfig:       tuiConfig,
+		slpxHome:        slpxHome,
+		historyFilePath: filepath.Join(slpxHome, ".history"),
+	}
+
+	if err := shared.loadHistory(); err != nil {
+		logger.Warn("failed to load command history", "error", err)
 	}
 
 	initialScreen := NewREPLScreen()

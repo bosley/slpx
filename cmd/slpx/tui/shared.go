@@ -1,9 +1,11 @@
 package tui
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"strings"
 	"sync"
 
@@ -73,17 +75,19 @@ func (c *capturedIO) GetAndClear() string {
 }
 
 type SharedState struct {
-	Logger         *slog.Logger
-	Session        *repl.Session
-	CapturedIO     *capturedIO
-	CommandHistory []string
-	OutputHistory  []string
-	Width          int
-	Height         int
-	PendingInput   string
-	Runtime        rt.Runtime
-	ActiveContext  rt.ActiveContext
-	TuiConfig      rt.TuiConfig
+	Logger          *slog.Logger
+	Session         *repl.Session
+	CapturedIO      *capturedIO
+	CommandHistory  []string
+	OutputHistory   []string
+	Width           int
+	Height          int
+	PendingInput    string
+	Runtime         rt.Runtime
+	ActiveContext   rt.ActiveContext
+	TuiConfig       rt.TuiConfig
+	slpxHome        string
+	historyFilePath string
 }
 
 func (s *SharedState) PromptStyle() lipgloss.Style {
@@ -207,6 +211,7 @@ func (s *SharedState) AddCommand(input string, output string) {
 	if output != "" {
 		s.OutputHistory = append(s.OutputHistory, output)
 	}
+	s.saveHistory()
 }
 
 func (s *SharedState) ClearOutput() {
@@ -215,4 +220,76 @@ func (s *SharedState) ClearOutput() {
 
 func (s *SharedState) RenderOutput() string {
 	return strings.Join(s.OutputHistory, "\n")
+}
+
+func (s *SharedState) loadHistory() error {
+	if s.historyFilePath == "" {
+		return nil
+	}
+
+	data, err := os.ReadFile(s.historyFilePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			file, createErr := os.Create(s.historyFilePath)
+			if createErr != nil {
+				s.Logger.Warn("failed to create history file", "error", createErr)
+				return createErr
+			}
+			file.Close()
+			return nil
+		}
+		s.Logger.Warn("failed to read history file", "error", err)
+		return err
+	}
+
+	content := string(data)
+	if content == "" {
+		return nil
+	}
+
+	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		var command string
+		if err := json.Unmarshal([]byte(line), &command); err != nil {
+			s.Logger.Warn("failed to decode history line, skipping", "error", err)
+			continue
+		}
+
+		s.CommandHistory = append(s.CommandHistory, command)
+	}
+
+	return nil
+}
+
+func (s *SharedState) saveHistory() {
+	if s.historyFilePath == "" {
+		return
+	}
+
+	if len(s.CommandHistory) == 0 {
+		return
+	}
+
+	lastCommand := s.CommandHistory[len(s.CommandHistory)-1]
+
+	encoded, err := json.Marshal(lastCommand)
+	if err != nil {
+		s.Logger.Warn("failed to encode command for history", "error", err)
+		return
+	}
+
+	file, err := os.OpenFile(s.historyFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		s.Logger.Warn("failed to open history file for writing", "error", err)
+		return
+	}
+	defer file.Close()
+
+	if _, err := file.Write(append(encoded, '\n')); err != nil {
+		s.Logger.Warn("failed to write to history file", "error", err)
+	}
 }
